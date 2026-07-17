@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { sidebarItems } from "./sidebarData";
+import { sidebarItems } from "./SidebarData";
 
 export default function Sidebar() {
   const [activeTab, setActiveTab] = useState<string>("Dashboard");
