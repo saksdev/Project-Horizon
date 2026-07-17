@@ -1,11 +1,22 @@
-
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
 }
 
-export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
+export default function WorkspaceLayout({
+  children,
+}: WorkspaceLayoutProps) {
   return (
-    <div className="grid grid-cols-[260px_1fr] min-h-screen w-full bg-slate-100 overflow-hidden">
+    <div
+      className="
+        min-h-screen
+        w-full
+        bg-slate-100
+        overflow-hidden
+        grid
+        grid-cols-1
+        md:grid-cols-[clamp(200px,25vw,260px)_1fr]
+      "
+    >
       {children}
     </div>
   );
