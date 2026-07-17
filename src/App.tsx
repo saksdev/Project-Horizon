@@ -1,10 +1,8 @@
+import Sidebar from "./components/layout/Sidebar/Sidebar"
 
-function App() {
+export default function App() {
   return (
-    <>
-    <h4>Horizon</h4>
-    </>
+      <Sidebar />
   )
 }
 
-export default App
