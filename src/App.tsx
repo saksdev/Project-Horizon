@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { useState, useCallback } from "react";
+import { Menu } from "lucide-react";
 import Sidebar from "./components/layout/Sidebar/Sidebar";
 import WorkspaceLayout from "./components/layout/Workspace/WorkspaceLayout";
 import Dashboard from "./Pages/Dashboard";
@@ -20,8 +21,8 @@ export default function App() {
       <main className="flex h-screen flex-1 flex-col overflow-hidden bg-slate-100">
         {/* Mobile Header */}
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm md:hidden">
-          <button onClick={openDrawer} className="p-2 hover:bg-slate-100 rounded-lg">
-            ☰
+          <button onClick={openDrawer} className="p-2 hover:bg-slate-100 active:scale-95 rounded-lg text-slate-700 hover:text-slate-900 transition-all" aria-label="Toggle Menu">
+            <Menu className="w-6 h-6" />
           </button>
           <h1 className="text-lg font-semibold text-slate-800">Horizon</h1>
           <div className="w-8" />
