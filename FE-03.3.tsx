@@ -1,9 +1,11 @@
+// Target File: src/Pages/Settings.tsx
+
 import React, { useState, useCallback } from "react";
-import {
-  User,
-  Settings as SettingsIcon,
-  ShieldAlert,
-  Save,
+import { 
+  User, 
+  Settings as SettingsIcon, 
+  ShieldAlert, 
+  Save, 
   RefreshCw,
   Info
 } from "lucide-react";
@@ -18,9 +20,11 @@ export default function SettingsOptionsPanel() {
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
   const [systemLogsEnabled, setSystemLogsEnabled] = useState(false);
 
-  // Safe parsing & conditional dropdown handler
+  // --- Safe Parsing & Conditional Dropdown Handlers (FE-03.3) ---
   const handleEnvChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const rawValue = e.target.value;
+
+    // Safety guard: Validate value is member of EnvironmentType enum
     const validEnvironments: EnvironmentType[] = ["development", "staging", "production"];
     const parsedEnv = validEnvironments.find(env => env === rawValue);
 
@@ -29,16 +33,18 @@ export default function SettingsOptionsPanel() {
       return;
     }
 
+    // Apply environment selection state
     setEnvironmentMode(parsedEnv);
 
+    // Conditional Execution Steps: Adjust rate limits and features automatically based on environment rules
     if (parsedEnv === "production") {
       setMaxRateLimit(5000);
-      setSystemLogsEnabled(true);
+      setSystemLogsEnabled(true); // Enforce logging in production
     } else if (parsedEnv === "staging") {
       setMaxRateLimit(2500);
       setSystemLogsEnabled(true);
     } else {
-      setMaxRateLimit(1000);
+      setMaxRateLimit(1000); // Sandbox defaults
       setSystemLogsEnabled(false);
     }
   }, []);
@@ -79,7 +85,7 @@ export default function SettingsOptionsPanel() {
           <h2 className="text-xl font-bold text-slate-800">System Preferences</h2>
           <p className="text-xs text-slate-400 mt-1">Configure and manage workspace preferences, security flags, and profile identities.</p>
         </div>
-        <button
+        <button 
           onClick={handleReset}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg active:scale-95 transition-all"
         >
@@ -100,8 +106,8 @@ export default function SettingsOptionsPanel() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Display Name
                 </label>
-                <input
-                  type="text"
+                <input 
+                  type="text" 
                   value={displayName}
                   onChange={handleNameChange}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500 transition-all text-slate-800 font-medium"
@@ -112,8 +118,8 @@ export default function SettingsOptionsPanel() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Contact Email
                 </label>
-                <input
-                  type="email"
+                <input 
+                  type="email" 
                   value={contactEmail}
                   onChange={handleEmailChange}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500 transition-all text-slate-800 font-medium"
@@ -136,7 +142,7 @@ export default function SettingsOptionsPanel() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Environment Mode
                 </label>
-                <select
+                <select 
                   value={environmentMode}
                   onChange={handleEnvChange}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/25 focus:border-purple-500 bg-white transition-all text-slate-800 font-medium"
@@ -150,8 +156,8 @@ export default function SettingsOptionsPanel() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Max API Rate Limit (req/min)
                 </label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   value={maxRateLimit}
                   onChange={handleRateLimitChange}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/25 focus:border-purple-500 transition-all text-slate-800 font-medium"
@@ -180,29 +186,33 @@ export default function SettingsOptionsPanel() {
           </div>
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 shrink-0">
             <div className="flex items-center gap-3">
-              <button
+              <button 
                 type="button"
                 onClick={handleEmailToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${emailAlertsEnabled ? "bg-emerald-500" : "bg-slate-200"
-                  }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${
+                  emailAlertsEnabled ? "bg-emerald-500" : "bg-slate-200"
+                }`}
               >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
-                    }`}
+                <span 
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${
+                    emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
+                  }`} 
                 />
               </button>
               <span className="text-xs font-semibold text-slate-600">Email Alerts</span>
             </div>
             <div className="flex items-center gap-3">
-              <button
+              <button 
                 type="button"
                 onClick={handleLogsToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${systemLogsEnabled ? "bg-emerald-500" : "bg-slate-200"
-                  }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${
+                  systemLogsEnabled ? "bg-emerald-500" : "bg-slate-200"
+                }`}
               >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${systemLogsEnabled ? "translate-x-5" : "translate-x-0"
-                    }`}
+                <span 
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${
+                    systemLogsEnabled ? "translate-x-5" : "translate-x-0"
+                  }`} 
                 />
               </button>
               <span className="text-xs font-semibold text-slate-600">Security Logging</span>
@@ -212,7 +222,7 @@ export default function SettingsOptionsPanel() {
       </div>
 
       <div className="flex justify-end pt-2">
-        <button
+        <button 
           type="submit"
           className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-md shadow-blue-500/10 active:scale-95 transition-all"
         >
