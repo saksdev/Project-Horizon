@@ -134,14 +134,35 @@ export default function SettingsOptionsPanel() {
     setErrors({});
   }, []);
 
+  // --- Submit Availability Rules & Submit Callback (FE-04.2) ---
+  const isFormInvalid =
+    Object.keys(errors).length > 0 ||
+    !displayName.trim() ||
+    !contactEmail.trim() ||
+    maxRateLimit < 1;
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (isFormInvalid) return;
+    console.log("Saving Workspace preferences...", {
+      displayName,
+      contactEmail,
+      environmentMode,
+      maxRateLimit,
+      emailAlertsEnabled,
+      systemLogsEnabled
+    });
+  }, [isFormInvalid, displayName, contactEmail, environmentMode, maxRateLimit, emailAlertsEnabled, systemLogsEnabled]);
+
   return (
-    <div className="w-full max-w-5xl mx-auto p-6 space-y-6">
+    <form onSubmit={handleSubmit} className="w-full max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center pb-5 border-b border-slate-200">
         <div>
           <h2 className="text-xl font-bold text-slate-800">System Preferences</h2>
           <p className="text-xs text-slate-400 mt-1">Configure and manage workspace preferences, security flags, and profile identities.</p>
         </div>
         <button
+          type="button"
           onClick={handleReset}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg active:scale-95 transition-all"
         >
@@ -169,12 +190,11 @@ export default function SettingsOptionsPanel() {
                   value={displayName}
                   onChange={handleNameChange}
                   className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-800 font-medium ${errors.displayName
-                    ? "border-red-300 focus:ring-red-500/25 focus:border-red-500"
-                    : "border-slate-200 focus:ring-blue-500/25 focus:border-blue-500"
+                      ? "border-red-300 focus:ring-red-500/25 focus:border-red-500"
+                      : "border-slate-200 focus:ring-blue-500/25 focus:border-blue-500"
                     }`}
                   placeholder="John Doe"
                 />
-                {/* Inline Alert Node (FE-04.1) */}
                 {errors.displayName && (
                   <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.displayName}</p>
                 )}
@@ -190,12 +210,11 @@ export default function SettingsOptionsPanel() {
                   value={contactEmail}
                   onChange={handleEmailChange}
                   className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-800 font-medium ${errors.contactEmail
-                    ? "border-red-300 focus:ring-red-500/25 focus:border-red-500"
-                    : "border-slate-200 focus:ring-blue-500/25 focus:border-blue-500"
+                      ? "border-red-300 focus:ring-red-500/25 focus:border-red-500"
+                      : "border-slate-200 focus:ring-blue-500/25 focus:border-blue-500"
                     }`}
                   placeholder="developer@domain.com"
                 />
-                {/* Inline Alert Node (FE-04.1) */}
                 {errors.contactEmail && (
                   <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.contactEmail}</p>
                 )}
@@ -239,12 +258,11 @@ export default function SettingsOptionsPanel() {
                   value={maxRateLimit}
                   onChange={handleRateLimitChange}
                   className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-800 font-medium ${errors.maxRateLimit
-                    ? "border-red-300 focus:ring-red-500/25 focus:border-red-500"
-                    : "border-slate-200 focus:ring-purple-500/25 focus:border-purple-500"
+                      ? "border-red-300 focus:ring-red-500/25 focus:border-red-500"
+                      : "border-slate-200 focus:ring-purple-500/25 focus:border-purple-500"
                     }`}
                   min="0"
                 />
-                {/* Inline Alert Node (FE-04.1) */}
                 {errors.maxRateLimit && (
                   <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.maxRateLimit}</p>
                 )}
@@ -305,12 +323,16 @@ export default function SettingsOptionsPanel() {
       <div className="flex justify-end pt-2">
         <button
           type="submit"
-          className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-md shadow-blue-500/10 active:scale-95 transition-all"
+          disabled={isFormInvalid}
+          className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white rounded-xl shadow-md transition-all ${isFormInvalid
+              ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
+              : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/10 active:scale-95 hover:shadow-lg"
+            }`}
         >
           <Save className="w-4 h-4" />
           <span>Save Changes</span>
         </button>
       </div>
-    </div>
+    </form>
   );
 }
