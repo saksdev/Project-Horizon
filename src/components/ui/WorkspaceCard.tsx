@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 
 export interface WorkspaceCardProps {
   title?: string;
@@ -10,7 +10,7 @@ export interface WorkspaceCardProps {
   children?: React.ReactNode;
 }
 
-export function WorkspaceCard({
+export const WorkspaceCard = memo(function WorkspaceCard({
   title,
   description,
   icon,
@@ -43,6 +43,6 @@ export function WorkspaceCard({
       )}
     </div>
   );
-}
+});
 
 WorkspaceCard.displayName = "WorkspaceCard";
