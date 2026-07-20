@@ -10,6 +10,12 @@ import {
 
 type EnvironmentType = "development" | "staging" | "production";
 
+interface ValidationErrors {
+  displayName?: string;
+  contactEmail?: string;
+  maxRateLimit?: string;
+}
+
 export default function SettingsOptionsPanel() {
   const [displayName, setDisplayName] = useState("Dev");
   const [contactEmail, setContactEmail] = useState("saksdev@mekari.co.in");
@@ -18,7 +24,70 @@ export default function SettingsOptionsPanel() {
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
   const [systemLogsEnabled, setSystemLogsEnabled] = useState(false);
 
-  // Safe parsing & conditional dropdown handler
+  // --- Local State for Inline Validation Logs (FE-04.1) ---
+  const [errors, setErrors] = useState<ValidationErrors>({});
+
+  // Dynamic Validation System
+  const validateField = useCallback((name: string, value: string | number) => {
+    setErrors((prev) => {
+      const nextErrors = { ...prev };
+
+      if (name === "displayName") {
+        const strVal = String(value);
+        if (!strVal.trim()) {
+          nextErrors.displayName = "Display Name cannot be empty.";
+        } else if (strVal.trim().length < 3) {
+          nextErrors.displayName = "Display Name must be at least 3 characters.";
+        } else {
+          delete nextErrors.displayName;
+        }
+      }
+
+      if (name === "contactEmail") {
+        const strVal = String(value);
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!strVal.trim()) {
+          nextErrors.contactEmail = "Email address cannot be empty.";
+        } else if (!emailRegex.test(strVal)) {
+          nextErrors.contactEmail = "Please enter a valid email address.";
+        } else {
+          delete nextErrors.contactEmail;
+        }
+      }
+
+      if (name === "maxRateLimit") {
+        const numVal = Number(value);
+        if (isNaN(numVal) || numVal < 1) {
+          nextErrors.maxRateLimit = "Rate limit must be a positive integer.";
+        } else if (numVal > 10000) {
+          nextErrors.maxRateLimit = "Rate limit cannot exceed 10,000 req/min.";
+        } else {
+          delete nextErrors.maxRateLimit;
+        }
+      }
+
+      return nextErrors;
+    });
+  }, []);
+
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setDisplayName(val);
+    validateField("displayName", val);
+  }, [validateField]);
+
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setContactEmail(val);
+    validateField("contactEmail", val);
+  }, [validateField]);
+
+  const handleRateLimitChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setMaxRateLimit(Number(val));
+    validateField("maxRateLimit", val);
+  }, [validateField]);
+
   const handleEnvChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const rawValue = e.target.value;
     const validEnvironments: EnvironmentType[] = ["development", "staging", "production"];
@@ -31,29 +100,21 @@ export default function SettingsOptionsPanel() {
 
     setEnvironmentMode(parsedEnv);
 
+    // Apply default rate limits and validate
+    let targetLimit = 1000;
     if (parsedEnv === "production") {
-      setMaxRateLimit(5000);
+      targetLimit = 5000;
       setSystemLogsEnabled(true);
     } else if (parsedEnv === "staging") {
-      setMaxRateLimit(2500);
+      targetLimit = 2500;
       setSystemLogsEnabled(true);
     } else {
-      setMaxRateLimit(1000);
+      targetLimit = 1000;
       setSystemLogsEnabled(false);
     }
-  }, []);
-
-  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setDisplayName(e.target.value);
-  }, []);
-
-  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setContactEmail(e.target.value);
-  }, []);
-
-  const handleRateLimitChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setMaxRateLimit(Number(e.target.value));
-  }, []);
+    setMaxRateLimit(targetLimit);
+    validateField("maxRateLimit", targetLimit);
+  }, [validateField]);
 
   const handleEmailToggle = useCallback(() => {
     setEmailAlertsEnabled(prev => !prev);
@@ -70,6 +131,7 @@ export default function SettingsOptionsPanel() {
     setMaxRateLimit(1000);
     setEmailAlertsEnabled(true);
     setSystemLogsEnabled(false);
+    setErrors({});
   }, []);
 
   return (
@@ -97,28 +159,46 @@ export default function SettingsOptionsPanel() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                <label htmlFor="displayName" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Display Name
                 </label>
                 <input
+                  id="displayName"
+                  name="displayName"
                   type="text"
                   value={displayName}
                   onChange={handleNameChange}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500 transition-all text-slate-800 font-medium"
+                  className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-800 font-medium ${errors.displayName
+                    ? "border-red-300 focus:ring-red-500/25 focus:border-red-500"
+                    : "border-slate-200 focus:ring-blue-500/25 focus:border-blue-500"
+                    }`}
                   placeholder="John Doe"
                 />
+                {/* Inline Alert Node (FE-04.1) */}
+                {errors.displayName && (
+                  <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.displayName}</p>
+                )}
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                <label htmlFor="contactEmail" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Contact Email
                 </label>
                 <input
+                  id="contactEmail"
+                  name="contactEmail"
                   type="email"
                   value={contactEmail}
                   onChange={handleEmailChange}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500 transition-all text-slate-800 font-medium"
+                  className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-800 font-medium ${errors.contactEmail
+                    ? "border-red-300 focus:ring-red-500/25 focus:border-red-500"
+                    : "border-slate-200 focus:ring-blue-500/25 focus:border-blue-500"
+                    }`}
                   placeholder="developer@domain.com"
                 />
+                {/* Inline Alert Node (FE-04.1) */}
+                {errors.contactEmail && (
+                  <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.contactEmail}</p>
+                )}
               </div>
             </div>
           </div>
@@ -133,10 +213,12 @@ export default function SettingsOptionsPanel() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                <label htmlFor="environmentMode" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Environment Mode
                 </label>
                 <select
+                  id="environmentMode"
+                  name="environmentMode"
                   value={environmentMode}
                   onChange={handleEnvChange}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/25 focus:border-purple-500 bg-white transition-all text-slate-800 font-medium"
@@ -147,16 +229,25 @@ export default function SettingsOptionsPanel() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                <label htmlFor="maxRateLimit" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Max API Rate Limit (req/min)
                 </label>
                 <input
+                  id="maxRateLimit"
+                  name="maxRateLimit"
                   type="number"
                   value={maxRateLimit}
                   onChange={handleRateLimitChange}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/25 focus:border-purple-500 transition-all text-slate-800 font-medium"
+                  className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-800 font-medium ${errors.maxRateLimit
+                    ? "border-red-300 focus:ring-red-500/25 focus:border-red-500"
+                    : "border-slate-200 focus:ring-purple-500/25 focus:border-purple-500"
+                    }`}
                   min="0"
                 />
+                {/* Inline Alert Node (FE-04.1) */}
+                {errors.maxRateLimit && (
+                  <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.maxRateLimit}</p>
+                )}
               </div>
             </div>
           </div>
