@@ -5,7 +5,10 @@ import {
   ShieldAlert,
   Save,
   RefreshCw,
-  Info
+  Info,
+  Terminal,
+  ShieldCheck,
+  ShieldX
 } from "lucide-react";
 
 type EnvironmentType = "development" | "staging" | "production";
@@ -23,11 +26,33 @@ export default function SettingsOptionsPanel() {
   const [maxRateLimit, setMaxRateLimit] = useState<number>(1000);
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
   const [systemLogsEnabled, setSystemLogsEnabled] = useState(false);
-
-  // --- Local State for Inline Validation Logs (FE-04.1) ---
   const [errors, setErrors] = useState<ValidationErrors>({});
 
-  // Dynamic Validation System
+  const sanitizeString = useCallback((val: string): string => {
+    let clean = val.trim();
+    clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+    clean = clean.replace(/<[^>]*>/g, "");
+    return clean;
+  }, []);
+
+  const [sandboxInput, setSandboxInput] = useState("");
+  const [sandboxSanitized, setSandboxSanitized] = useState("");
+  const [sandboxStatus, setSandboxStatus] = useState<"clean" | "warning">("clean");
+
+  const handleSandboxInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    setSandboxInput(rawVal);
+
+    const cleanVal = sanitizeString(rawVal);
+    setSandboxSanitized(cleanVal);
+
+    if (rawVal !== cleanVal || (rawVal && !rawVal.trim())) {
+      setSandboxStatus("warning");
+    } else {
+      setSandboxStatus("clean");
+    }
+  }, [sanitizeString]);
+
   const validateField = useCallback((name: string, value: string | number) => {
     setErrors((prev) => {
       const nextErrors = { ...prev };
@@ -100,7 +125,6 @@ export default function SettingsOptionsPanel() {
 
     setEnvironmentMode(parsedEnv);
 
-    // Apply default rate limits and validate
     let targetLimit = 1000;
     if (parsedEnv === "production") {
       targetLimit = 5000;
@@ -132,9 +156,11 @@ export default function SettingsOptionsPanel() {
     setEmailAlertsEnabled(true);
     setSystemLogsEnabled(false);
     setErrors({});
+    setSandboxInput("");
+    setSandboxSanitized("");
+    setSandboxStatus("clean");
   }, []);
 
-  // --- Submit Availability Rules & Submit Callback (FE-04.2) ---
   const isFormInvalid =
     Object.keys(errors).length > 0 ||
     !displayName.trim() ||
@@ -144,15 +170,22 @@ export default function SettingsOptionsPanel() {
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (isFormInvalid) return;
-    console.log("Saving Workspace preferences...", {
-      displayName,
-      contactEmail,
+
+    const safeName = sanitizeString(displayName);
+    const safeEmail = sanitizeString(contactEmail);
+
+    console.log("Saving secured workspace preferences...", {
+      displayName: safeName,
+      contactEmail: safeEmail,
       environmentMode,
       maxRateLimit,
       emailAlertsEnabled,
       systemLogsEnabled
     });
-  }, [isFormInvalid, displayName, contactEmail, environmentMode, maxRateLimit, emailAlertsEnabled, systemLogsEnabled]);
+
+    setDisplayName(safeName);
+    setContactEmail(safeEmail);
+  }, [isFormInvalid, displayName, contactEmail, environmentMode, maxRateLimit, emailAlertsEnabled, systemLogsEnabled, sanitizeString]);
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-5xl mx-auto p-6 space-y-6">
@@ -171,7 +204,7 @@ export default function SettingsOptionsPanel() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center gap-2 text-slate-700 font-bold text-sm mb-4">
@@ -318,6 +351,61 @@ export default function SettingsOptionsPanel() {
             </div>
           </div>
         </div>
+
+        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 md:col-span-2 space-y-4 shadow-inner">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-bold text-slate-200 font-mono">Edge-Case Inputs Sandbox (FE-04.4)</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800/80 text-[10px] font-bold font-mono">
+              {sandboxStatus === "clean" ? (
+                <>
+                  <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                  <span className="text-emerald-500">Secured Input</span>
+                </>
+              ) : (
+                <>
+                  <ShieldX className="w-3 h-3 text-amber-500" />
+                  <span className="text-amber-500">Sanitizer Intercepted</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="sandboxInput" className="block text-[10px] font-bold text-slate-400 font-mono uppercase tracking-wider mb-1.5">
+                Stress Test Box (Paste tags/scripts/spaces)
+              </label>
+              <input
+                id="sandboxInput"
+                name="sandboxInput"
+                type="text"
+                value={sandboxInput}
+                onChange={handleSandboxInputChange}
+                className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-xl focus:outline-none focus:border-amber-500 font-mono text-slate-300"
+                placeholder="e.g. <script>alert(1)</script>   "
+              />
+            </div>
+
+            <div className="space-y-2">
+              <span className="block text-[10px] font-bold text-slate-400 font-mono uppercase tracking-wider">
+                Sanitization Output Log
+              </span>
+              <div className="w-full min-h-[38px] px-3 py-2 bg-slate-950 rounded-xl border border-slate-850 font-mono text-xs flex items-center">
+                {sandboxSanitized ? (
+                  <span className="text-emerald-400">{sandboxSanitized}</span>
+                ) : sandboxInput ? (
+                  <span className="text-slate-600 italic">[Empty String Output]</span>
+                ) : (
+                  <span className="text-slate-600 italic">Console idle...</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div className="flex justify-end pt-2">
