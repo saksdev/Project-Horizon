@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 
 export type EnvironmentType = "development" | "staging" | "production";
 
@@ -72,8 +72,8 @@ const INITIAL_UI: TemporaryUISwitches = Object.freeze({
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 /**
- * Workspace Provider Component (FE-09.1 & FE-09.3)
- * Manages central state slices while enforcing strict data tree protection to eliminate unsafe reference overrides.
+ * Workspace Provider Component (FE-09.1, FE-09.3, FE-09.4)
+ * Manages central state slices, enforces data tree protection, and logs initial state variables via DevTools.
  */
 export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Permanent State Tree
@@ -81,6 +81,14 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Temporary UI State Tree
   const [ui, setUi] = useState<TemporaryUISwitches>(INITIAL_UI);
+
+  // FE-09.4: Provider Allocation Audits - Log initial state variables via development tools on mount
+  useEffect(() => {
+    console.log("[WorkspaceStore DevTools]: Central state tree mounted successfully.", {
+      initialRecords: INITIAL_RECORDS,
+      initialUi: INITIAL_UI,
+    });
+  }, []);
 
   // --- FE-09.3: Protected Permanent Records Mutators ---
   const updateProfile = useCallback((displayName: string, contactEmail: string) => {

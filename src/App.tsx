@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "./components/layout/Sidebar/Sidebar";
 import WorkspaceLayout from "./components/layout/Workspace/WorkspaceLayout";
@@ -7,16 +7,17 @@ import Dashboard from "./Pages/Dashboard";
 import Projects from "./Pages/Projects";
 import Users from "./Pages/Users";
 import Settings from "./Pages/Settings";
+import { useWorkspace } from "./context/WorkspaceContext";
 
 export default function App() {
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const { ui, toggleMobileDrawer } = useWorkspace();
 
-  const closeDrawer = useCallback(() => setIsMobileDrawerOpen(false), []);
-  const openDrawer = useCallback(() => setIsMobileDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => toggleMobileDrawer(false), [toggleMobileDrawer]);
+  const openDrawer = useCallback(() => toggleMobileDrawer(true), [toggleMobileDrawer]);
 
   return (
     <WorkspaceLayout>
-      <Sidebar isOpen={isMobileDrawerOpen} closeDrawer={closeDrawer} />
+      <Sidebar isOpen={ui.isMobileDrawerOpen} closeDrawer={closeDrawer} />
 
       <main className="flex h-screen flex-1 flex-col overflow-hidden bg-slate-100">
         {/* Mobile Header */}
