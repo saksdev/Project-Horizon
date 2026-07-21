@@ -91,14 +91,14 @@ export default function Dashboard() {
   }, [searchQuery]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6">
+    <div className="w-full space-y-3">
       {/* Header & Responsive Navigation Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-4 border-b border-slate-200 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-3 border-b border-slate-200 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
             Dashboard Workspace
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Real-time metrics, telemetry coordinates, and query parameter
             history controls.
           </p>
@@ -118,9 +118,9 @@ export default function Dashboard() {
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${isActive
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${isActive
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
                     }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
@@ -133,7 +133,7 @@ export default function Dashboard() {
       </div>
 
       {/* Real-time Log Query Search Input Box & Parameter State Indicator */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
           <InputField
             id="logQuery"
@@ -148,7 +148,7 @@ export default function Dashboard() {
           <Filter className="w-3.5 h-3.5 text-blue-600 shrink-0" />
           <span className="shrink-0">Active Query Param:</span>
           <code
-            className="bg-slate-100 px-2 py-1 rounded text-blue-600 font-mono font-bold truncate max-w-[160px] sm:max-w-[220px] inline-block"
+            className="bg-slate-100 px-2 py-0.5 rounded text-blue-600 font-mono font-bold truncate max-w-[160px] sm:max-w-[220px] inline-block"
             title={searchQuery ? `?query=${encodeURIComponent(searchQuery)}` : "None"}
           >
             {searchQuery ? `?query=${encodeURIComponent(searchQuery)}` : "None"}
@@ -157,10 +157,10 @@ export default function Dashboard() {
       </div>
 
       {/* Dynamic Content Panel Container */}
-      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm min-h-[300px]" role="tabpanel" id={`panel-${activeTab}`}>
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm min-h-[300px]" role="tabpanel" id={`panel-${activeTab}`}>
         {activeTab === "overview" && (
           <div className="space-y-3">
-            <h2 className="text-lg font-bold text-slate-800">
+            <h2 className="text-base sm:text-lg font-bold text-slate-800">
               Workspace Overview Panel
             </h2>
 
@@ -171,8 +171,8 @@ export default function Dashboard() {
               </code>
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-4">
-              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 pt-2">
+              <div className="bg-blue-50/50 p-3.5 sm:p-4 rounded-xl border border-blue-100">
                 <span className="text-[10px] uppercase font-bold text-blue-600">
                   Total Requests
                 </span>
@@ -181,7 +181,7 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+              <div className="bg-emerald-50/50 p-3.5 sm:p-4 rounded-xl border border-emerald-100">
                 <span className="text-[10px] uppercase font-bold text-emerald-600">
                   System Health
                 </span>
@@ -190,7 +190,7 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100 sm:col-span-2 md:col-span-1">
+              <div className="bg-purple-50/50 p-3.5 sm:p-4 rounded-xl border border-purple-100 sm:col-span-2 md:col-span-1">
                 <span className="text-[10px] uppercase font-bold text-purple-600">
                   Active Sessions
                 </span>
@@ -204,7 +204,7 @@ export default function Dashboard() {
 
         {activeTab === "analytics" && (
           <div className="space-y-3">
-            <h2 className="text-lg font-bold text-slate-800">
+            <h2 className="text-base sm:text-lg font-bold text-slate-800">
               Real-time Telemetry Analytics
             </h2>
 
@@ -215,7 +215,7 @@ export default function Dashboard() {
               </code>
             </p>
 
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-600">
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-600">
               [Telemetry Tracker]: Streaming incoming bandwidth and payload
               sizes...
             </div>
@@ -223,9 +223,9 @@ export default function Dashboard() {
         )}
 
         {activeTab === "activity" && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-slate-800">
+              <h2 className="text-base sm:text-lg font-bold text-slate-800">
                 System Logs & Operations Activity
               </h2>
               <span className="text-xs font-bold text-slate-500">
@@ -243,10 +243,10 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2 font-mono text-xs text-slate-700 overflow-x-auto">
                       <span
                         className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${log.level === "INFO"
-                            ? "bg-blue-100 text-blue-700"
-                            : log.level === "WARN"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-emerald-100 text-emerald-700"
+                          ? "bg-blue-100 text-blue-700"
+                          : log.level === "WARN"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-emerald-100 text-emerald-700"
                           }`}
                       >
                         {log.level}
@@ -269,7 +269,7 @@ export default function Dashboard() {
 
         {activeTab === "reports" && (
           <div className="space-y-3">
-            <h2 className="text-lg font-bold text-slate-800">
+            <h2 className="text-base sm:text-lg font-bold text-slate-800">
               Export & Audit Reports
             </h2>
 
@@ -280,7 +280,7 @@ export default function Dashboard() {
               </code>
             </p>
 
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-600">
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-600">
               [Audit Security]: Compliance security scan passed with 0
               vulnerabilities.
             </div>

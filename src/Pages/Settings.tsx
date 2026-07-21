@@ -82,10 +82,10 @@ export default function SettingsOptionsPanel() {
 
       if (name === "contactEmail") {
         const strVal = String(value);
-        const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!strVal.trim()) {
           nextErrors.contactEmail = "Email address cannot be empty.";
-        } else if (!EMAIL_REGEX.test(strVal)) {
+        } else if (!emailRegex.test(strVal)) {
           nextErrors.contactEmail = "Please enter a valid email address.";
         } else {
           delete nextErrors.contactEmail;
@@ -224,11 +224,11 @@ export default function SettingsOptionsPanel() {
   }, [isFormInvalid, displayName, contactEmail, environmentMode, maxRateLimit, emailAlertsEnabled, systemLogsEnabled, sanitizeString]);
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-5xl mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center pb-5 border-b border-slate-200">
+    <form onSubmit={handleSubmit} className="w-full space-y-3">
+      <div className="flex justify-between items-center pb-3 border-b border-slate-200">
         <div>
           <h2 className="text-xl font-bold text-slate-800">System Preferences</h2>
-          <p className="text-xs text-slate-400 mt-1">Configure and manage workspace preferences, security flags, and profile identities.</p>
+          <p className="text-xs text-slate-400 mt-0.5">Configure and manage workspace preferences, security flags, and profile identities.</p>
         </div>
         <Button
           variant="secondary"
@@ -240,7 +240,7 @@ export default function SettingsOptionsPanel() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
         <WorkspaceCard
           title="Developer Identity"
           icon={<User className="w-4 h-4 text-blue-600" />}
@@ -345,11 +345,11 @@ export default function SettingsOptionsPanel() {
           </div>
         </WorkspaceCard>
 
-        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 md:col-span-2 space-y-4 shadow-inner">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 md:col-span-2 space-y-3.5 shadow-inner">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-amber-500" />
-              <span className="text-xs font-bold text-slate-200 font-mono">Edge-Case Inputs Sandbox (FE-04.4)</span>
+              <span className="text-xs font-bold text-slate-200 font-mono">Edge-Case Inputs Sandbox</span>
             </div>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800/80 text-[10px] font-bold font-mono">
               {sandboxStatus === "clean" ? (
@@ -401,7 +401,7 @@ export default function SettingsOptionsPanel() {
 
       </div>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-end pt-1">
         <Button
           type="submit"
           disabled={isFormInvalid}

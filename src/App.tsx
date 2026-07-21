@@ -29,7 +29,7 @@ export default function App() {
         </header>
 
         {/* Page Content */}
-        <section className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <section className="flex-1 overflow-y-auto p-3 sm:p-4">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
