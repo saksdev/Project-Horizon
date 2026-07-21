@@ -3,57 +3,57 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 export type EnvironmentType = "development" | "staging" | "production";
 
 export interface LogEntry {
-  id: number;
-  type: string;
-  level: "INFO" | "WARN" | "SUCCESS";
-  text: string;
-  time: string;
+  readonly id: number;
+  readonly type: string;
+  readonly level: "INFO" | "WARN" | "SUCCESS";
+  readonly text: string;
+  readonly time: string;
 }
 
-// Slice A: Permanent Workspace Records
+// Slice A: Permanent Workspace Records (FE-09.3 Immutable Data Tree Specification)
 export interface PermanentWorkspaceRecords {
-  displayName: string;
-  contactEmail: string;
-  environmentMode: EnvironmentType;
-  maxRateLimit: number;
-  emailAlertsEnabled: boolean;
-  systemLogsEnabled: boolean;
-  logs: LogEntry[];
+  readonly displayName: string;
+  readonly contactEmail: string;
+  readonly environmentMode: EnvironmentType;
+  readonly maxRateLimit: number;
+  readonly emailAlertsEnabled: boolean;
+  readonly systemLogsEnabled: boolean;
+  readonly logs: ReadonlyArray<LogEntry>;
 }
 
-// Slice B: Temporary UI Switches
+// Slice B: Temporary UI Switches (FE-09.3 Immutable Data Tree Specification)
 export interface TemporaryUISwitches {
-  isMobileDrawerOpen: boolean;
-  activeTab: string;
-  searchQuery: string;
+  readonly isMobileDrawerOpen: boolean;
+  readonly activeTab: string;
+  readonly searchQuery: string;
 }
 
 export interface WorkspaceContextType {
-  // Permanent Records State & Mutators
-  records: PermanentWorkspaceRecords;
-  updateProfile: (displayName: string, contactEmail: string) => void;
-  updateEnvironment: (environmentMode: EnvironmentType) => void;
-  updateRateLimit: (limit: number) => void;
-  toggleEmailAlerts: () => void;
-  toggleSystemLogs: () => void;
-  restoreDefaults: () => void;
+  // Permanent Records State & Mutators (Readonly Protected Data Tree)
+  readonly records: Readonly<PermanentWorkspaceRecords>;
+  readonly updateProfile: (displayName: string, contactEmail: string) => void;
+  readonly updateEnvironment: (environmentMode: EnvironmentType) => void;
+  readonly updateRateLimit: (limit: number) => void;
+  readonly toggleEmailAlerts: () => void;
+  readonly toggleSystemLogs: () => void;
+  readonly restoreDefaults: () => void;
 
-  // Temporary UI Switches State & Mutators
-  ui: TemporaryUISwitches;
-  toggleMobileDrawer: (open?: boolean) => void;
-  setActiveTab: (tab: string) => void;
-  setSearchQuery: (query: string) => void;
+  // Temporary UI Switches State & Mutators (Readonly Protected Data Tree)
+  readonly ui: Readonly<TemporaryUISwitches>;
+  readonly toggleMobileDrawer: (open?: boolean) => void;
+  readonly setActiveTab: (tab: string) => void;
+  readonly setSearchQuery: (query: string) => void;
 }
 
-const INITIAL_LOGS: LogEntry[] = [
+const INITIAL_LOGS: ReadonlyArray<LogEntry> = Object.freeze([
   { id: 1, type: "auth", level: "INFO", text: "[Activity Log]: User saksdev@mekari.co.in authenticated via OAuth2.0", time: "10 mins ago" },
   { id: 2, type: "security", level: "WARN", text: "[Security Alert]: Firewall blocked suspicious IP 192.168.1.45", time: "25 mins ago" },
   { id: 3, type: "database", level: "INFO", text: "[Database]: Central query executed in 1.4ms (Cluster A)", time: "1 hour ago" },
   { id: 4, type: "api", level: "WARN", text: "[API Gateway]: Rate limit threshold reached for endpoint /v1/users", time: "2 hours ago" },
   { id: 5, type: "system", level: "SUCCESS", text: "[System Deploy]: Release v2.4.0 successfully deployed to production", time: "3 hours ago" },
-];
+]);
 
-const INITIAL_RECORDS: PermanentWorkspaceRecords = {
+const INITIAL_RECORDS: PermanentWorkspaceRecords = Object.freeze({
   displayName: "Dev",
   contactEmail: "saksdev@mekari.co.in",
   environmentMode: "development",
@@ -61,19 +61,19 @@ const INITIAL_RECORDS: PermanentWorkspaceRecords = {
   emailAlertsEnabled: true,
   systemLogsEnabled: false,
   logs: INITIAL_LOGS,
-};
+});
 
-const INITIAL_UI: TemporaryUISwitches = {
+const INITIAL_UI: TemporaryUISwitches = Object.freeze({
   isMobileDrawerOpen: false,
   activeTab: "overview",
   searchQuery: "",
-};
+});
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 /**
- * Workspace Provider Component (FE-09.1)
- * Centralizes global state management by decoupling Permanent Workspace Records from Temporary UI Switches.
+ * Workspace Provider Component (FE-09.1 & FE-09.3)
+ * Manages central state slices while enforcing strict data tree protection to eliminate unsafe reference overrides.
  */
 export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Permanent State Tree
@@ -82,16 +82,26 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Temporary UI State Tree
   const [ui, setUi] = useState<TemporaryUISwitches>(INITIAL_UI);
 
-  // --- Permanent Records Mutators (FE-09.3 Strict Data Patterns) ---
+  // --- FE-09.3: Protected Permanent Records Mutators ---
   const updateProfile = useCallback((displayName: string, contactEmail: string) => {
-    setRecords((prev) => ({
-      ...prev,
-      displayName,
-      contactEmail,
-    }));
+    const cleanName = displayName.trim();
+    const cleanEmail = contactEmail.trim();
+
+    if (!cleanName || !cleanEmail) return;
+
+    setRecords((prev) =>
+      Object.freeze({
+        ...prev,
+        displayName: cleanName,
+        contactEmail: cleanEmail,
+      })
+    );
   }, []);
 
   const updateEnvironment = useCallback((environmentMode: EnvironmentType) => {
+    const validModes: EnvironmentType[] = ["development", "staging", "production"];
+    if (!validModes.includes(environmentMode)) return;
+
     setRecords((prev) => {
       let targetLimit = 1000;
       let logsEnabled = false;
@@ -104,34 +114,42 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         logsEnabled = true;
       }
 
-      return {
+      return Object.freeze({
         ...prev,
         environmentMode,
         maxRateLimit: targetLimit,
         systemLogsEnabled: logsEnabled,
-      };
+      });
     });
   }, []);
 
   const updateRateLimit = useCallback((limit: number) => {
-    setRecords((prev) => ({
-      ...prev,
-      maxRateLimit: limit,
-    }));
+    if (isNaN(limit) || limit < 1 || limit > 10000) return;
+
+    setRecords((prev) =>
+      Object.freeze({
+        ...prev,
+        maxRateLimit: limit,
+      })
+    );
   }, []);
 
   const toggleEmailAlerts = useCallback(() => {
-    setRecords((prev) => ({
-      ...prev,
-      emailAlertsEnabled: !prev.emailAlertsEnabled,
-    }));
+    setRecords((prev) =>
+      Object.freeze({
+        ...prev,
+        emailAlertsEnabled: !prev.emailAlertsEnabled,
+      })
+    );
   }, []);
 
   const toggleSystemLogs = useCallback(() => {
-    setRecords((prev) => ({
-      ...prev,
-      systemLogsEnabled: !prev.systemLogsEnabled,
-    }));
+    setRecords((prev) =>
+      Object.freeze({
+        ...prev,
+        systemLogsEnabled: !prev.systemLogsEnabled,
+      })
+    );
   }, []);
 
   const restoreDefaults = useCallback(() => {
@@ -139,26 +157,32 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setUi(INITIAL_UI);
   }, []);
 
-  // --- Temporary UI Mutators ---
+  // --- FE-09.3: Protected Temporary UI Mutators ---
   const toggleMobileDrawer = useCallback((open?: boolean) => {
-    setUi((prev) => ({
-      ...prev,
-      isMobileDrawerOpen: open !== undefined ? open : !prev.isMobileDrawerOpen,
-    }));
+    setUi((prev) =>
+      Object.freeze({
+        ...prev,
+        isMobileDrawerOpen: open !== undefined ? open : !prev.isMobileDrawerOpen,
+      })
+    );
   }, []);
 
   const setActiveTab = useCallback((activeTab: string) => {
-    setUi((prev) => ({
-      ...prev,
-      activeTab,
-    }));
+    setUi((prev) =>
+      Object.freeze({
+        ...prev,
+        activeTab,
+      })
+    );
   }, []);
 
   const setSearchQuery = useCallback((searchQuery: string) => {
-    setUi((prev) => ({
-      ...prev,
-      searchQuery,
-    }));
+    setUi((prev) =>
+      Object.freeze({
+        ...prev,
+        searchQuery,
+      })
+    );
   }, []);
 
   const contextValue = useMemo<WorkspaceContextType>(
