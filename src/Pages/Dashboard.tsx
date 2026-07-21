@@ -32,7 +32,7 @@ const MOCK_LOGS = [
 export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Route Parameter Parsing: Validates URL tab key against schema with safe fallback to "overview"
+  // Route Parameter Parsing (FE-08.1 & FE-08.3): Validates URL tab key against schema and primes deep-link views with safe fallback to "overview"
   const rawTab = searchParams.get("tab") || "";
   const activeTab = TABS.some((t) => t.id === rawTab) ? rawTab : "overview";
   const searchQuery = searchParams.get("query") || "";
