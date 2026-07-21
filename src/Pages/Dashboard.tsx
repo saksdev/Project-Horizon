@@ -25,15 +25,22 @@ const MOCK_LOGS = [
   { id: 5, type: "system", level: "SUCCESS", text: "[System Deploy]: Release v2.4.0 successfully deployed to production", time: "3 hours ago" },
 ];
 
+/**
+ * Main Dashboard Workspace View Component.
+ * Orchestrates URL search parameters, dynamic tab views, real-time log search, and browser history layers.
+ */
 export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Cold Boot Initialization & Route Validation - Fallback to "overview" if tab is invalid
+  // Route Parameter Parsing: Validates URL tab key against schema with safe fallback to "overview"
   const rawTab = searchParams.get("tab") || "";
   const activeTab = TABS.some((t) => t.id === rawTab) ? rawTab : "overview";
   const searchQuery = searchParams.get("query") || "";
 
-  // Tab changes create explicit history stack checkpoints so Back button restores active tab
+  /**
+   * Handles tab switching by updating the URL search parameter.
+   * Records explicit history checkpoints to enable accurate browser Back/Forward navigation.
+   */
   const handleTabChange = useCallback(
     (tabId: string) => {
       setSearchParams((prev) => {
@@ -45,7 +52,10 @@ export default function Dashboard() {
     [setSearchParams]
   );
 
-  // Keystrokes use { replace: true } to avoid history pollution while preserving search state
+  /**
+   * Handles real-time search query input mutations.
+   * Uses in-place history replacement ({ replace: true }) to prevent browser history stack pollution.
+   */
   const handleQueryChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
@@ -65,9 +75,13 @@ export default function Dashboard() {
     [setSearchParams]
   );
 
+  /**
+   * Memoized log filtering logic based on active URL search parameter query term.
+   */
   const filteredLogs = useMemo(() => {
-    if (!searchQuery.trim()) return MOCK_LOGS;
-    const term = searchQuery.toLowerCase();
+    const term = searchQuery.trim().toLowerCase();
+    if (!term) return MOCK_LOGS;
+
     return MOCK_LOGS.filter(
       (log) =>
         log.text.toLowerCase().includes(term) ||
@@ -78,6 +92,7 @@ export default function Dashboard() {
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6">
+      {/* Header & Responsive Navigation Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-4 border-b border-slate-200 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
@@ -89,7 +104,8 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="w-full md:w-auto overflow-x-auto scrollbar-none">
+        {/* Tab Controls (Fluid Horizontal Scroll Bar on Mobile Viewports) */}
+        <div className="w-full md:w-auto overflow-x-auto scrollbar-none" role="tablist">
           <div className="inline-flex min-w-max bg-slate-200/70 p-1 rounded-xl gap-1">
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -98,10 +114,13 @@ export default function Dashboard() {
               return (
                 <button
                   key={tab.id}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`panel-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${isActive
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
                     }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
@@ -113,6 +132,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Real-time Log Query Search Input Box & Parameter State Indicator */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex-1 min-w-0">
           <InputField
@@ -136,7 +156,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm min-h-[300px]">
+      {/* Dynamic Content Panel Container */}
+      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm min-h-[300px]" role="tabpanel" id={`panel-${activeTab}`}>
         {activeTab === "overview" && (
           <div className="space-y-3">
             <h2 className="text-lg font-bold text-slate-800">
@@ -222,10 +243,10 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2 font-mono text-xs text-slate-700 overflow-x-auto">
                       <span
                         className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${log.level === "INFO"
-                          ? "bg-blue-100 text-blue-700"
-                          : log.level === "WARN"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-emerald-100 text-emerald-700"
+                            ? "bg-blue-100 text-blue-700"
+                            : log.level === "WARN"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-emerald-100 text-emerald-700"
                           }`}
                       >
                         {log.level}

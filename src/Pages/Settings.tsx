@@ -82,10 +82,10 @@ export default function SettingsOptionsPanel() {
 
       if (name === "contactEmail") {
         const strVal = String(value);
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!strVal.trim()) {
           nextErrors.contactEmail = "Email address cannot be empty.";
-        } else if (!emailRegex.test(strVal)) {
+        } else if (!EMAIL_REGEX.test(strVal)) {
           nextErrors.contactEmail = "Please enter a valid email address.";
         } else {
           delete nextErrors.contactEmail;
