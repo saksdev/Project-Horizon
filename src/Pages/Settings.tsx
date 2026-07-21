@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from "react";
-import { 
-  User, 
-  Settings as SettingsIcon, 
-  ShieldAlert, 
-  Save, 
+import {
+  User,
+  Settings as SettingsIcon,
+  ShieldAlert,
+  Save,
   RefreshCw,
   Info,
   Terminal,
@@ -31,6 +31,9 @@ export default function SettingsOptionsPanel() {
   const [systemLogsEnabled, setSystemLogsEnabled] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
 
+  /**
+   * Strips HTML tags and inline scripts from raw text inputs to prevent XSS attacks.
+   */
   const sanitizeString = useCallback((val: string): string => {
     let clean = val.trim();
     clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
@@ -42,13 +45,16 @@ export default function SettingsOptionsPanel() {
   const [sandboxSanitized, setSandboxSanitized] = useState("");
   const [sandboxStatus, setSandboxStatus] = useState<"clean" | "warning">("clean");
 
+  /**
+   * Handles input changes in the stress test console and updates sanitization logs.
+   */
   const handleSandboxInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value;
     setSandboxInput(rawVal);
-    
+
     const cleanVal = sanitizeString(rawVal);
     setSandboxSanitized(cleanVal);
-    
+
     if (rawVal !== cleanVal || (rawVal && !rawVal.trim())) {
       setSandboxStatus("warning");
     } else {
@@ -56,6 +62,9 @@ export default function SettingsOptionsPanel() {
     }
   }, [sanitizeString]);
 
+  /**
+   * Validates form inputs against schema rules and updates real-time error states.
+   */
   const validateField = useCallback((name: string, value: string | number) => {
     setErrors((prev) => {
       const nextErrors = { ...prev };
@@ -98,24 +107,36 @@ export default function SettingsOptionsPanel() {
     });
   }, []);
 
+  /**
+   * Handles changes to the display name field and triggers real-time field validation.
+   */
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setDisplayName(val);
     validateField("displayName", val);
   }, [validateField]);
 
+  /**
+   * Handles changes to the contact email field and validates format against regex rules.
+   */
   const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setContactEmail(val);
     validateField("contactEmail", val);
   }, [validateField]);
 
+  /**
+   * Handles changes to the maximum API rate limit field and validates numeric bounds.
+   */
   const handleRateLimitChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setMaxRateLimit(Number(val));
     validateField("maxRateLimit", val);
   }, [validateField]);
 
+  /**
+   * Handles environment mode selection and updates rate limits automatically based on mode.
+   */
   const handleEnvChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const rawValue = e.target.value;
     const validEnvironments: EnvironmentType[] = ["development", "staging", "production"];
@@ -143,14 +164,23 @@ export default function SettingsOptionsPanel() {
     validateField("maxRateLimit", targetLimit);
   }, [validateField]);
 
+  /**
+   * Toggles real-time email notification alert preferences.
+   */
   const handleEmailToggle = useCallback(() => {
     setEmailAlertsEnabled(prev => !prev);
   }, []);
 
+  /**
+   * Toggles active security logging operations state.
+   */
   const handleLogsToggle = useCallback(() => {
     setSystemLogsEnabled(prev => !prev);
   }, []);
 
+  /**
+   * Restores all workspace settings, input fields, and errors back to default values.
+   */
   const handleReset = useCallback(() => {
     setDisplayName("Dev");
     setContactEmail("saksdev@mekari.co.in");
@@ -164,13 +194,16 @@ export default function SettingsOptionsPanel() {
     setSandboxStatus("clean");
   }, []);
 
-  const isFormInvalid = 
-    Object.keys(errors).length > 0 || 
-    !displayName.trim() || 
-    !contactEmail.trim() || 
+  const isFormInvalid =
+    Object.keys(errors).length > 0 ||
+    !displayName.trim() ||
+    !contactEmail.trim() ||
     maxRateLimit < 1;
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  /**
+   * Handles settings form submission, prevents invalid postbacks, and sanitizes input data.
+   */
+  const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isFormInvalid) return;
 
@@ -185,7 +218,7 @@ export default function SettingsOptionsPanel() {
       emailAlertsEnabled,
       systemLogsEnabled
     });
-    
+
     setDisplayName(safeName);
     setContactEmail(safeEmail);
   }, [isFormInvalid, displayName, contactEmail, environmentMode, maxRateLimit, emailAlertsEnabled, systemLogsEnabled, sanitizeString]);
@@ -197,7 +230,7 @@ export default function SettingsOptionsPanel() {
           <h2 className="text-xl font-bold text-slate-800">System Preferences</h2>
           <p className="text-xs text-slate-400 mt-1">Configure and manage workspace preferences, security flags, and profile identities.</p>
         </div>
-        <Button 
+        <Button
           variant="secondary"
           className="text-xs py-1.5 px-3"
           leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
@@ -213,7 +246,7 @@ export default function SettingsOptionsPanel() {
           icon={<User className="w-4 h-4 text-blue-600" />}
           description="Updates profile identity and access values across central environments."
         >
-          <InputField 
+          <InputField
             id="displayName"
             name="displayName"
             label="Display Name"
@@ -222,7 +255,7 @@ export default function SettingsOptionsPanel() {
             error={errors.displayName}
             placeholder="John Doe"
           />
-          <InputField 
+          <InputField
             id="contactEmail"
             name="contactEmail"
             label="Contact Email"
@@ -250,7 +283,7 @@ export default function SettingsOptionsPanel() {
             <label htmlFor="environmentMode" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 select-none">
               Environment Mode
             </label>
-            <select 
+            <select
               id="environmentMode"
               name="environmentMode"
               value={environmentMode}
@@ -262,7 +295,7 @@ export default function SettingsOptionsPanel() {
               <option value="production">Production Release</option>
             </select>
           </div>
-          <InputField 
+          <InputField
             id="maxRateLimit"
             name="maxRateLimit"
             label="Max API Rate Limit (req/min)"
@@ -282,33 +315,29 @@ export default function SettingsOptionsPanel() {
         >
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 justify-end">
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 type="button"
                 onClick={handleEmailToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${
-                  emailAlertsEnabled ? "bg-emerald-500" : "bg-slate-200"
-                }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${emailAlertsEnabled ? "bg-emerald-500" : "bg-slate-200"
+                  }`}
               >
-                <span 
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${
-                    emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
-                  }`} 
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
                 />
               </button>
               <span className="text-xs font-semibold text-slate-600">Email Alerts</span>
             </div>
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 type="button"
                 onClick={handleLogsToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${
-                  systemLogsEnabled ? "bg-emerald-500" : "bg-slate-200"
-                }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${systemLogsEnabled ? "bg-emerald-500" : "bg-slate-200"
+                  }`}
               >
-                <span 
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${
-                    systemLogsEnabled ? "translate-x-5" : "translate-x-0"
-                  }`} 
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${systemLogsEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
                 />
               </button>
               <span className="text-xs font-semibold text-slate-600">Security Logging</span>
@@ -342,10 +371,10 @@ export default function SettingsOptionsPanel() {
               <label htmlFor="sandboxInput" className="block text-[10px] font-bold text-slate-400 font-mono uppercase tracking-wider mb-1.5">
                 Stress Test Box (Paste tags/scripts/spaces)
               </label>
-              <input 
+              <input
                 id="sandboxInput"
                 name="sandboxInput"
-                type="text" 
+                type="text"
                 value={sandboxInput}
                 onChange={handleSandboxInputChange}
                 className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-xl focus:outline-none focus:border-amber-500 font-mono text-slate-300"
@@ -373,7 +402,7 @@ export default function SettingsOptionsPanel() {
       </div>
 
       <div className="flex justify-end pt-2">
-        <Button 
+        <Button
           type="submit"
           disabled={isFormInvalid}
           leftIcon={<Save className="w-4.5 h-4.5" />}
