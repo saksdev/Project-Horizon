@@ -82,14 +82,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Temporary UI State Tree
   const [ui, setUi] = useState<TemporaryUISwitches>(INITIAL_UI);
 
-  // FE-09.4: Provider Allocation Audits - Log initial state variables via development tools on mount
-  useEffect(() => {
-    console.log("[WorkspaceStore DevTools]: Central state tree mounted successfully.", {
-      initialRecords: INITIAL_RECORDS,
-      initialUi: INITIAL_UI,
-    });
-  }, []);
-
   // --- FE-09.3: Protected Permanent Records Mutators ---
   const updateProfile = useCallback((displayName: string, contactEmail: string) => {
     const cleanName = displayName.trim();

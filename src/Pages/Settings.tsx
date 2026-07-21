@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   User,
   Settings as SettingsIcon,
@@ -13,8 +13,7 @@ import {
 import { Button } from "../components/ui/Button";
 import { InputField } from "../components/ui/InputField";
 import { WorkspaceCard } from "../components/ui/WorkspaceCard";
-
-type EnvironmentType = "development" | "staging" | "production";
+import { useWorkspace, type EnvironmentType } from "../context/WorkspaceContext";
 
 interface ValidationErrors {
   displayName?: string;
@@ -23,13 +22,29 @@ interface ValidationErrors {
 }
 
 export default function SettingsOptionsPanel() {
-  const [displayName, setDisplayName] = useState("Dev");
-  const [contactEmail, setContactEmail] = useState("saksdev@mekari.co.in");
-  const [environmentMode, setEnvironmentMode] = useState<EnvironmentType>("development");
-  const [maxRateLimit, setMaxRateLimit] = useState<number>(1000);
-  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
-  const [systemLogsEnabled, setSystemLogsEnabled] = useState(false);
+  const {
+    records,
+    updateProfile,
+    updateEnvironment,
+    updateRateLimit,
+    toggleEmailAlerts,
+    toggleSystemLogs,
+    restoreDefaults,
+  } = useWorkspace();
+
+  const [displayName, setDisplayName] = useState(records.displayName);
+  const [contactEmail, setContactEmail] = useState(records.contactEmail);
+  const [environmentMode, setEnvironmentMode] = useState<EnvironmentType>(records.environmentMode);
+  const [maxRateLimit, setMaxRateLimit] = useState<number>(records.maxRateLimit);
   const [errors, setErrors] = useState<ValidationErrors>({});
+
+  // FE-10.1: Synchronize local state with global workspace store records when store updates
+  useEffect(() => {
+    setDisplayName(records.displayName);
+    setContactEmail(records.contactEmail);
+    setEnvironmentMode(records.environmentMode);
+    setMaxRateLimit(records.maxRateLimit);
+  }, [records.displayName, records.contactEmail, records.environmentMode, records.maxRateLimit]);
 
   /**
    * Strips HTML tags and inline scripts from raw text inputs to prevent XSS attacks.
@@ -130,12 +145,13 @@ export default function SettingsOptionsPanel() {
    */
   const handleRateLimitChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    setMaxRateLimit(Number(val));
-    validateField("maxRateLimit", val);
+    const numVal = Number(val);
+    setMaxRateLimit(numVal);
+    validateField("maxRateLimit", numVal);
   }, [validateField]);
 
   /**
-   * Handles environment mode selection and updates rate limits automatically based on mode.
+   * Handles environment mode selection and updates central store environment and rate limit.
    */
   const handleEnvChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const rawValue = e.target.value;
@@ -148,51 +164,42 @@ export default function SettingsOptionsPanel() {
     }
 
     setEnvironmentMode(parsedEnv);
+    updateEnvironment(parsedEnv);
 
     let targetLimit = 1000;
     if (parsedEnv === "production") {
       targetLimit = 5000;
-      setSystemLogsEnabled(true);
     } else if (parsedEnv === "staging") {
       targetLimit = 2500;
-      setSystemLogsEnabled(true);
-    } else {
-      targetLimit = 1000;
-      setSystemLogsEnabled(false);
     }
     setMaxRateLimit(targetLimit);
     validateField("maxRateLimit", targetLimit);
-  }, [validateField]);
+  }, [updateEnvironment, validateField]);
 
   /**
-   * Toggles real-time email notification alert preferences.
+   * Toggles real-time email notification alert preferences in central store.
    */
   const handleEmailToggle = useCallback(() => {
-    setEmailAlertsEnabled(prev => !prev);
-  }, []);
+    toggleEmailAlerts();
+  }, [toggleEmailAlerts]);
 
   /**
-   * Toggles active security logging operations state.
+   * Toggles active security logging operations state in central store.
    */
   const handleLogsToggle = useCallback(() => {
-    setSystemLogsEnabled(prev => !prev);
-  }, []);
+    toggleSystemLogs();
+  }, [toggleSystemLogs]);
 
   /**
-   * Restores all workspace settings, input fields, and errors back to default values.
+   * Restores all central workspace settings and local form inputs back to default values.
    */
   const handleReset = useCallback(() => {
-    setDisplayName("Dev");
-    setContactEmail("saksdev@mekari.co.in");
-    setEnvironmentMode("development");
-    setMaxRateLimit(1000);
-    setEmailAlertsEnabled(true);
-    setSystemLogsEnabled(false);
+    restoreDefaults();
     setErrors({});
     setSandboxInput("");
     setSandboxSanitized("");
     setSandboxStatus("clean");
-  }, []);
+  }, [restoreDefaults]);
 
   const isFormInvalid =
     Object.keys(errors).length > 0 ||
@@ -201,7 +208,7 @@ export default function SettingsOptionsPanel() {
     maxRateLimit < 1;
 
   /**
-   * Handles settings form submission, prevents invalid postbacks, and sanitizes input data.
+   * Handles settings form submission, dispatches action mutators to central store.
    */
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -210,18 +217,11 @@ export default function SettingsOptionsPanel() {
     const safeName = sanitizeString(displayName);
     const safeEmail = sanitizeString(contactEmail);
 
-    console.log("Saving secured workspace preferences...", {
-      displayName: safeName,
-      contactEmail: safeEmail,
-      environmentMode,
-      maxRateLimit,
-      emailAlertsEnabled,
-      systemLogsEnabled
-    });
-
-    setDisplayName(safeName);
-    setContactEmail(safeEmail);
-  }, [isFormInvalid, displayName, contactEmail, environmentMode, maxRateLimit, emailAlertsEnabled, systemLogsEnabled, sanitizeString]);
+    // Dispatch action modifiers to central store (FE-10.1)
+    updateProfile(safeName, safeEmail);
+    updateRateLimit(maxRateLimit);
+    updateEnvironment(environmentMode);
+  }, [isFormInvalid, displayName, contactEmail, maxRateLimit, environmentMode, sanitizeString, updateProfile, updateRateLimit, updateEnvironment]);
 
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-3">
@@ -232,6 +232,7 @@ export default function SettingsOptionsPanel() {
         </div>
         <Button
           variant="secondary"
+          type="button"
           className="text-xs py-1.5 px-3"
           leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
           onClick={handleReset}
@@ -318,11 +319,11 @@ export default function SettingsOptionsPanel() {
               <button
                 type="button"
                 onClick={handleEmailToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${emailAlertsEnabled ? "bg-emerald-500" : "bg-slate-200"
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${records.emailAlertsEnabled ? "bg-emerald-500" : "bg-slate-200"
                   }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${records.emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
                     }`}
                 />
               </button>
@@ -332,11 +333,11 @@ export default function SettingsOptionsPanel() {
               <button
                 type="button"
                 onClick={handleLogsToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${systemLogsEnabled ? "bg-emerald-500" : "bg-slate-200"
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${records.systemLogsEnabled ? "bg-emerald-500" : "bg-slate-200"
                   }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${systemLogsEnabled ? "translate-x-5" : "translate-x-0"
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${records.systemLogsEnabled ? "translate-x-5" : "translate-x-0"
                     }`}
                 />
               </button>

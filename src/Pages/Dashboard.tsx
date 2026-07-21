@@ -9,6 +9,7 @@ import {
   Filter,
 } from "lucide-react";
 import { InputField } from "../components/ui/InputField";
+import { useWorkspace } from "../context/WorkspaceContext";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -17,20 +18,14 @@ const TABS = [
   { id: "reports", label: "Reports & Audits", icon: FileText },
 ];
 
-const MOCK_LOGS = [
-  { id: 1, type: "auth", level: "INFO", text: "[Activity Log]: User saksdev@mekari.co.in authenticated via OAuth2.0", time: "10 mins ago" },
-  { id: 2, type: "security", level: "WARN", text: "[Security Alert]: Firewall blocked suspicious IP 192.168.1.45", time: "25 mins ago" },
-  { id: 3, type: "database", level: "INFO", text: "[Database]: Central query executed in 1.4ms (Cluster A)", time: "1 hour ago" },
-  { id: 4, type: "api", level: "WARN", text: "[API Gateway]: Rate limit threshold reached for endpoint /v1/users", time: "2 hours ago" },
-  { id: 5, type: "system", level: "SUCCESS", text: "[System Deploy]: Release v2.4.0 successfully deployed to production", time: "3 hours ago" },
-];
-
 /**
  * Main Dashboard Workspace View Component.
  * Orchestrates URL search parameters, dynamic tab views, real-time log search, and browser history layers.
+ * Subscribes to central WorkspaceContext (FE-10.1 & FE-10.3).
  */
 export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { records } = useWorkspace();
 
   // Route Parameter Parsing (FE-08.1 & FE-08.3): Validates URL tab key against schema and primes deep-link views with safe fallback to "overview"
   const rawTab = searchParams.get("tab") || "";
@@ -76,19 +71,19 @@ export default function Dashboard() {
   );
 
   /**
-   * Memoized log filtering logic based on active URL search parameter query term.
+   * Memoized log filtering logic subscribing directly to central store records.logs (FE-10.1 & FE-10.3).
    */
   const filteredLogs = useMemo(() => {
     const term = searchQuery.trim().toLowerCase();
-    if (!term) return MOCK_LOGS;
+    if (!term) return records.logs;
 
-    return MOCK_LOGS.filter(
+    return records.logs.filter(
       (log) =>
         log.text.toLowerCase().includes(term) ||
         log.level.toLowerCase().includes(term) ||
         log.type.toLowerCase().includes(term)
     );
-  }, [searchQuery]);
+  }, [searchQuery, records.logs]);
 
   return (
     <div className="w-full space-y-3">
@@ -96,7 +91,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-3 border-b border-slate-200 gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
-            Dashboard Workspace
+            Dashboard Workspace ({records.displayName})
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Real-time metrics, telemetry coordinates, and query parameter
@@ -118,10 +113,11 @@ export default function Dashboard() {
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${isActive
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
-                    }`}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                    isActive
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
+                  }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   <span>{tab.label}</span>
@@ -147,7 +143,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 shrink-0 self-end md:self-center">
           <Filter className="w-3.5 h-3.5 text-blue-600 shrink-0" />
           <span className="shrink-0">Active Query Param:</span>
-          <code
+          <code 
             className="bg-slate-100 px-2 py-0.5 rounded text-blue-600 font-mono font-bold truncate max-w-[160px] sm:max-w-[220px] inline-block"
             title={searchQuery ? `?query=${encodeURIComponent(searchQuery)}` : "None"}
           >
@@ -217,7 +213,7 @@ export default function Dashboard() {
 
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-600">
               [Telemetry Tracker]: Streaming incoming bandwidth and payload
-              sizes...
+              sizes for {records.contactEmail}...
             </div>
           </div>
         )}
@@ -242,12 +238,13 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-2 font-mono text-xs text-slate-700 overflow-x-auto">
                       <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${log.level === "INFO"
-                          ? "bg-blue-100 text-blue-700"
-                          : log.level === "WARN"
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          log.level === "INFO"
+                            ? "bg-blue-100 text-blue-700"
+                            : log.level === "WARN"
                             ? "bg-amber-100 text-amber-700"
                             : "bg-emerald-100 text-emerald-700"
-                          }`}
+                        }`}
                       >
                         {log.level}
                       </span>
@@ -281,8 +278,7 @@ export default function Dashboard() {
             </p>
 
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-600">
-              [Audit Security]: Compliance security scan passed with 0
-              vulnerabilities.
+              [Audit Security]: Compliance security scan passed for environment "{records.environmentMode}" with 0 vulnerabilities.
             </div>
           </div>
         )}
