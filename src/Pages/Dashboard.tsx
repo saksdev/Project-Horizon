@@ -95,7 +95,7 @@ export default function Dashboard() {
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Real-time metrics, telemetry coordinates, and query parameter
-            history controls. ({records.contactEmail})
+            history controls.
           </p>
         </div>
 
