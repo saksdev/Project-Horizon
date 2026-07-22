@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 
 export type EnvironmentType = "development" | "staging" | "production";
 
@@ -73,7 +73,7 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefin
 
 /**
  * Workspace Provider Component (FE-09.1, FE-09.3, FE-09.4)
- * Manages central state slices, enforces data tree protection, and logs initial state variables via DevTools.
+ * Manages central state slices, enforces data tree protection, and logs state tree updates via DevTools.
  */
 export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Permanent State Tree
@@ -81,6 +81,14 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Temporary UI State Tree
   const [ui, setUi] = useState<TemporaryUISwitches>(INITIAL_UI);
+
+  // FE-09.4 & FE-10.3: Log the entire global state tree object to console whenever it updates
+  useEffect(() => {
+    console.log("[WorkspaceStore DevTools]: Central State Tree Updated.", {
+      records,
+      ui,
+    });
+  }, [records, ui]);
 
   // --- FE-09.3: Protected Permanent Records Mutators ---
   const updateProfile = useCallback((displayName: string, contactEmail: string) => {
@@ -102,25 +110,25 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const validModes: EnvironmentType[] = ["development", "staging", "production"];
     if (!validModes.includes(environmentMode)) return;
 
-    setRecords((prev) => {
-      let targetLimit = 1000;
-      let logsEnabled = false;
+    let targetLimit = 1000;
+    let logsEnabled = false;
 
-      if (environmentMode === "production") {
-        targetLimit = 5000;
-        logsEnabled = true;
-      } else if (environmentMode === "staging") {
-        targetLimit = 2500;
-        logsEnabled = true;
-      }
+    if (environmentMode === "production") {
+      targetLimit = 5000;
+      logsEnabled = true;
+    } else if (environmentMode === "staging") {
+      targetLimit = 2500;
+      logsEnabled = true;
+    }
 
-      return Object.freeze({
+    setRecords((prev) =>
+      Object.freeze({
         ...prev,
         environmentMode,
         maxRateLimit: targetLimit,
         systemLogsEnabled: logsEnabled,
-      });
-    });
+      })
+    );
   }, []);
 
   const updateRateLimit = useCallback((limit: number) => {

@@ -220,8 +220,7 @@ export default function SettingsOptionsPanel() {
     // Dispatch action modifiers to central store (FE-10.1)
     updateProfile(safeName, safeEmail);
     updateRateLimit(maxRateLimit);
-    updateEnvironment(environmentMode);
-  }, [isFormInvalid, displayName, contactEmail, maxRateLimit, environmentMode, sanitizeString, updateProfile, updateRateLimit, updateEnvironment]);
+  }, [isFormInvalid, displayName, contactEmail, maxRateLimit, sanitizeString, updateProfile, updateRateLimit]);
 
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-3">
