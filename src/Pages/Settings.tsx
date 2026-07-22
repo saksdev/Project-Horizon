@@ -5,7 +5,6 @@ import {
   ShieldAlert,
   Save,
   RefreshCw,
-  Info,
   Terminal,
   ShieldCheck,
   ShieldX,
