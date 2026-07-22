@@ -28,4 +28,26 @@ apiClient.interceptors.request.use(
   }
 );
 
+/**
+ * Axios Response Interceptor (FE-11.3).
+ * Intercepts incoming responses globally to handle token expiration (401), server errors (5xx), and connectivity failures.
+ */
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      const { status } = error.response;
+
+      if (status === 401) {
+        console.warn("[Workspace API Interceptor]: Unauthorized access or expired token detected (401).");
+      } else if (status >= 500) {
+        console.error(`[Workspace API Interceptor]: Central server error encountered (${status}).`);
+      }
+    } else {
+      console.error("[Workspace API Interceptor]: Network connection lost or target server unreachable.");
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default apiClient;
