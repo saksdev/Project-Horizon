@@ -34,7 +34,7 @@ export const handlers = [
   // HTTP PUT: Update global workspace variables in mock db
   http.put("/api/workspace", async ({ request }) => {
     const updatedData = (await request.json()) as Partial<WorkspaceConfig>;
-    
+
     // Inject 1000ms delay to simulate network write latency
     await delay(1000);
 
@@ -45,5 +45,17 @@ export const handlers = [
     };
 
     return HttpResponse.json(mockDb);
+  }),
+
+  // Diagnostic Endpoint: Trigger mock 401 Unauthorized Error
+  http.get("/api/trigger-401", async () => {
+    await delay(500);
+    return new HttpResponse(null, { status: 401 });
+  }),
+
+  // Diagnostic Endpoint: Trigger mock 500 Server Crash Error
+  http.get("/api/trigger-500", async () => {
+    await delay(500);
+    return new HttpResponse(null, { status: 500 });
   }),
 ];

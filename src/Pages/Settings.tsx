@@ -8,12 +8,14 @@ import {
   Info,
   Terminal,
   ShieldCheck,
-  ShieldX
+  ShieldX,
+  Activity
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { InputField } from "../components/ui/InputField";
 import { WorkspaceCard } from "../components/ui/WorkspaceCard";
 import { useWorkspace, type EnvironmentType } from "../context/WorkspaceContext";
+import apiClient from "../api/apiClient";
 
 interface ValidationErrors {
   displayName?: string;
@@ -24,6 +26,7 @@ interface ValidationErrors {
 export default function SettingsOptionsPanel() {
   const {
     records,
+    isLoading,
     updateProfile,
     updateEnvironment,
     updateRateLimit,
@@ -37,6 +40,11 @@ export default function SettingsOptionsPanel() {
   const [environmentMode, setEnvironmentMode] = useState<EnvironmentType>(records.environmentMode);
   const [maxRateLimit, setMaxRateLimit] = useState<number>(records.maxRateLimit);
   const [errors, setErrors] = useState<ValidationErrors>({});
+
+  // FE-12.4: Latency profiling sandbox states
+  const [latency, setLatency] = useState<number | null>(null);
+  const [latencyStatus, setLatencyStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
+  const [errorLog, setErrorLog] = useState<string>("");
 
   // FE-10.1: Synchronize local state with global workspace store records when store updates
   useEffect(() => {
@@ -141,17 +149,7 @@ export default function SettingsOptionsPanel() {
   }, [validateField]);
 
   /**
-   * Handles changes to the maximum API rate limit field and validates numeric bounds.
-   */
-  const handleRateLimitChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    const numVal = Number(val);
-    setMaxRateLimit(numVal);
-    validateField("maxRateLimit", numVal);
-  }, [validateField]);
-
-  /**
-   * Handles environment mode selection and updates central store environment and rate limit.
+   * Handles changes to the environment mode dropdown selector.
    */
   const handleEnvChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const rawValue = e.target.value;
@@ -177,29 +175,28 @@ export default function SettingsOptionsPanel() {
   }, [updateEnvironment, validateField]);
 
   /**
-   * Toggles real-time email notification alert preferences in central store.
+   * Handles changes to the max rate limit field and validates input constraints.
+   */
+  const handleRateLimitChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    const numVal = parseInt(rawVal, 10);
+    setMaxRateLimit(isNaN(numVal) ? 0 : numVal);
+    validateField("maxRateLimit", rawVal);
+  }, [validateField]);
+
+  /**
+   * Dispatches email notification setting toggle to the central store.
    */
   const handleEmailToggle = useCallback(() => {
     toggleEmailAlerts();
   }, [toggleEmailAlerts]);
 
   /**
-   * Toggles active security logging operations state in central store.
+   * Dispatches security logs setting toggle to the central store.
    */
   const handleLogsToggle = useCallback(() => {
     toggleSystemLogs();
   }, [toggleSystemLogs]);
-
-  /**
-   * Restores all central workspace settings and local form inputs back to default values.
-   */
-  const handleReset = useCallback(() => {
-    restoreDefaults();
-    setErrors({});
-    setSandboxInput("");
-    setSandboxSanitized("");
-    setSandboxStatus("clean");
-  }, [restoreDefaults]);
 
   const isFormInvalid =
     Object.keys(errors).length > 0 ||
@@ -222,130 +219,181 @@ export default function SettingsOptionsPanel() {
     updateRateLimit(maxRateLimit);
   }, [isFormInvalid, displayName, contactEmail, maxRateLimit, sanitizeString, updateProfile, updateRateLimit]);
 
+  // FE-12.4: Latency diagnostic profiling trigger
+  const testLatency = useCallback(async () => {
+    setLatencyStatus("testing");
+    setErrorLog("");
+    const startTime = performance.now();
+    try {
+      await apiClient.get("/api/workspace");
+      const duration = Math.round(performance.now() - startTime);
+      setLatency(duration);
+      setLatencyStatus("success");
+    } catch (err: any) {
+      setLatencyStatus("error");
+      setErrorLog(err.message || "Failed to reach mock server.");
+    }
+  }, []);
+
+  // FE-12.4: Test expired token 401 response interceptor
+  const triggerError401 = useCallback(async () => {
+    setErrorLog("");
+    try {
+      await apiClient.get("/api/trigger-401");
+    } catch {
+      setErrorLog("[401 Intercepted]: Access expired warning logged to browser console.");
+    }
+  }, []);
+
+  // FE-12.4: Test server failure 500 response interceptor
+  const triggerError500 = useCallback(async () => {
+    setErrorLog("");
+    try {
+      await apiClient.get("/api/trigger-500");
+    } catch {
+      setErrorLog("[500 Intercepted]: Central server error diagnostic logged to browser console.");
+    }
+  }, []);
+
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-3">
-      <div className="flex justify-between items-center pb-3 border-b border-slate-200">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">System Preferences</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Configure and manage workspace preferences, security flags, and profile identities.</p>
-        </div>
-        <Button
-          variant="secondary"
-          type="button"
-          className="text-xs py-1.5 px-3"
-          leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-          onClick={handleReset}
-        >
-          Restore Defaults
-        </Button>
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
         <WorkspaceCard
-          title="Developer Identity"
-          icon={<User className="w-4 h-4 text-blue-600" />}
-          description="Updates profile identity and access values across central environments."
+          title="Profile Settings"
+          description="Update your workspace identity details and administrator contact emails."
+          icon={<User className="w-5 h-5 text-indigo-500" />}
         >
-          <InputField
-            id="displayName"
-            name="displayName"
-            label="Display Name"
-            value={displayName}
-            onChange={handleNameChange}
-            error={errors.displayName}
-            placeholder="John Doe"
-          />
-          <InputField
-            id="contactEmail"
-            name="contactEmail"
-            label="Contact Email"
-            type="email"
-            value={contactEmail}
-            onChange={handleEmailChange}
-            error={errors.contactEmail}
-            placeholder="developer@domain.com"
-          />
+          <div className="space-y-3">
+            <InputField
+              id="displayName"
+              name="displayName"
+              label="Display Name"
+              type="text"
+              value={displayName}
+              onChange={handleNameChange}
+              error={errors.displayName}
+              placeholder="e.g. Production Cluster"
+              disabled={isLoading}
+            />
+
+            <InputField
+              id="contactEmail"
+              name="contactEmail"
+              label="Administrator Email"
+              type="email"
+              value={contactEmail}
+              onChange={handleEmailChange}
+              error={errors.contactEmail}
+              placeholder="e.g. admin@mekari.co.in"
+              disabled={isLoading}
+            />
+          </div>
         </WorkspaceCard>
 
         <WorkspaceCard
-          title="Workspace Configurations"
-          icon={<SettingsIcon className="w-4 h-4 text-purple-600" />}
-          footer={
-            <div className="flex items-start gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-              <Info className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
-              <p className="text-[10px] text-slate-500 leading-normal">
-                Rate Limit adjusted automatically based on Environment Mode: Production (5000), Staging (2500), Development (1000).
-              </p>
-            </div>
+          title="System Architecture"
+          description="Adjust runtime environments and API rate threshold parameters."
+          icon={<SettingsIcon className="w-5 h-5 text-indigo-500" />}
+          headerAction={
+            <button
+              type="button"
+              onClick={restoreDefaults}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors text-xs font-semibold"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Restore
+            </button>
           }
         >
-          <div>
-            <label htmlFor="environmentMode" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 select-none">
-              Environment Mode
-            </label>
-            <select
-              id="environmentMode"
-              name="environmentMode"
-              value={environmentMode}
-              onChange={handleEnvChange}
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/25 focus:border-purple-500 bg-white transition-all text-slate-800 font-medium"
-            >
-              <option value="development">Development Sandbox</option>
-              <option value="staging">Staging Environment</option>
-              <option value="production">Production Release</option>
-            </select>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="environmentMode" className="block text-xs font-bold text-slate-700 mb-1.5">
+                Runtime Environment
+              </label>
+              <select
+                id="environmentMode"
+                name="environmentMode"
+                value={environmentMode}
+                onChange={handleEnvChange}
+                disabled={isLoading}
+                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-slate-700 transition-all font-medium"
+              >
+                <option value="development">Development Mode</option>
+                <option value="staging">Staging Sandbox</option>
+                <option value="production">Production Environment</option>
+              </select>
+            </div>
+
+            <InputField
+              id="maxRateLimit"
+              name="maxRateLimit"
+              label="Max Rate Limit (req/min)"
+              type="number"
+              value={maxRateLimit}
+              onChange={handleRateLimitChange}
+              error={errors.maxRateLimit}
+              placeholder="e.g. 5000"
+              disabled={isLoading}
+            />
           </div>
-          <InputField
-            id="maxRateLimit"
-            name="maxRateLimit"
-            label="Max API Rate Limit (req/min)"
-            type="number"
-            value={maxRateLimit}
-            onChange={handleRateLimitChange}
-            error={errors.maxRateLimit}
-            min="0"
-          />
         </WorkspaceCard>
 
         <WorkspaceCard
-          title="Security Operations"
-          icon={<ShieldAlert className="w-4 h-4 text-emerald-600" />}
-          description="Enable active communication streams or verbose database logging triggers to safeguard state data transfers."
-          className="md:col-span-2"
+          title="Security Rules"
+          description="Toggle automated threat alerts and configure central logging triggers."
+          icon={<ShieldAlert className="w-5 h-5 text-indigo-500" />}
         >
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 justify-end">
-            <div className="flex items-center gap-3">
+          <div className="space-y-4 py-1">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-sm font-semibold text-slate-800">Email Alerts</span>
+                <p className="text-xs text-slate-500">Dispatch alerts for validation checks</p>
+              </div>
               <button
+                id="emailAlertsToggle"
                 type="button"
                 onClick={handleEmailToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${records.emailAlertsEnabled ? "bg-emerald-500" : "bg-slate-200"
-                  }`}
+                disabled={isLoading}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  records.emailAlertsEnabled ? "bg-indigo-600" : "bg-slate-200"
+                }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${records.emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
-                    }`}
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    records.emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
                 />
               </button>
-              <span className="text-xs font-semibold text-slate-600">Email Alerts</span>
             </div>
-            <div className="flex items-center gap-3">
+
+            <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+              <div className="space-y-0.5">
+                <span className="text-sm font-semibold text-slate-800">Security Logging</span>
+                <p className="text-xs text-slate-500">Log runtime changes to system console</p>
+              </div>
               <button
+                id="securityLoggingToggle"
                 type="button"
                 onClick={handleLogsToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${records.systemLogsEnabled ? "bg-emerald-500" : "bg-slate-200"
-                  }`}
+                disabled={isLoading}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  records.systemLogsEnabled ? "bg-indigo-600" : "bg-slate-200"
+                }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-300 ease-in-out ${records.systemLogsEnabled ? "translate-x-5" : "translate-x-0"
-                    }`}
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    records.systemLogsEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
                 />
               </button>
-              <span className="text-xs font-semibold text-slate-600">Security Logging</span>
             </div>
           </div>
         </WorkspaceCard>
 
-        <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 md:col-span-2 space-y-3.5 shadow-inner">
+        {/* Edge-Case Inputs Sandbox */}
+        <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3.5 shadow-inner">
           <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-amber-500" />
@@ -366,7 +414,7 @@ export default function SettingsOptionsPanel() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="sandboxInput" className="block text-[10px] font-bold text-slate-400 font-mono uppercase tracking-wider mb-1.5">
                 Stress Test Box (Paste tags/scripts/spaces)
@@ -399,16 +447,91 @@ export default function SettingsOptionsPanel() {
           </div>
         </div>
 
+        {/* FE-12.4: Network Connectivity Testing Sandbox */}
+        <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 md:col-span-2 space-y-3.5 shadow-inner">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs font-bold text-slate-200 font-mono">Network Connectivity Sandbox</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800/80 text-[10px] font-bold font-mono text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              MSW MOCK API ONLINE
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={testLatency}
+              disabled={latencyStatus === "testing"}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-750 bg-slate-800 text-slate-100 hover:bg-slate-700/80 md:active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200 text-xs font-bold font-mono tracking-wide shadow-lg shadow-slate-950/20 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-blue-400 ${latencyStatus === "testing" ? "animate-spin" : ""}`} />
+              <span>Test Latency</span>
+            </button>
+            <button
+              type="button"
+              onClick={triggerError401}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 md:active:scale-95 transition-all duration-200 text-xs font-bold font-mono tracking-wide shadow-md shadow-amber-950/10 cursor-pointer"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+              <span>Trigger 401 Intercept</span>
+            </button>
+            <button
+              type="button"
+              onClick={triggerError500}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 md:active:scale-95 transition-all duration-200 text-xs font-bold font-mono tracking-wide shadow-md shadow-rose-950/10 cursor-pointer"
+            >
+              <ShieldX className="w-3.5 h-3.5 text-rose-400" />
+              <span>Trigger 500 Intercept</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 font-mono text-xs space-y-1">
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payload Metrics</span>
+              <div className="flex justify-between text-slate-350">
+                <span>Intercept Mode:</span>
+                <span className="text-emerald-400 font-bold">Service Worker</span>
+              </div>
+              <div className="flex justify-between text-slate-350">
+                <span>Latency Ping:</span>
+                <span className={latencyStatus === "testing" ? "text-amber-400" : "text-slate-200"}>
+                  {latencyStatus === "testing" ? "Measuring..." : latency !== null ? `${latency} ms` : "Not Tested"}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 font-mono text-xs space-y-1">
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sandbox Logs</span>
+              <div className="text-slate-400 italic">
+                {errorLog ? (
+                  <span className={errorLog.includes("500") ? "text-red-400" : "text-amber-400"}>{errorLog}</span>
+                ) : (
+                  "Ready to profile connections..."
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div className="flex justify-end pt-1">
+      <div className="flex justify-end pt-1 items-center gap-3">
+        {isLoading && (
+          <div className="flex items-center gap-2 text-xs text-amber-500 font-mono animate-pulse">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            Synchronizing with mock server...
+          </div>
+        )}
         <Button
           type="submit"
-          disabled={isFormInvalid}
-          leftIcon={<Save className="w-4.5 h-4.5" />}
+          disabled={isFormInvalid || isLoading}
+          leftIcon={!isLoading && <Save className="w-4.5 h-4.5" />}
           className="px-6 py-2.5"
         >
-          Save Changes
+          {isLoading ? "Saving..." : "Save Changes"}
         </Button>
       </div>
     </form>

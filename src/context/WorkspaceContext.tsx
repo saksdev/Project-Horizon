@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
+import apiClient from "../api/apiClient";
 
 export type EnvironmentType = "development" | "staging" | "production";
 
@@ -31,6 +32,7 @@ export interface TemporaryUISwitches {
 export interface WorkspaceContextType {
   // Permanent Records State & Mutators (Readonly Protected Data Tree)
   readonly records: Readonly<PermanentWorkspaceRecords>;
+  readonly isLoading: boolean;
   readonly updateProfile: (displayName: string, contactEmail: string) => void;
   readonly updateEnvironment: (environmentMode: EnvironmentType) => void;
   readonly updateRateLimit: (limit: number) => void;
@@ -73,7 +75,7 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefin
 
 /**
  * Workspace Provider Component (FE-09.1, FE-09.3, FE-09.4)
- * Manages central state slices, enforces data tree protection, and logs state tree updates via DevTools.
+ * Manages central state slices, enforces data tree protection, and synchronizes state with MSW mock backend client.
  */
 export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Permanent State Tree
@@ -82,13 +84,32 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Temporary UI State Tree
   const [ui, setUi] = useState<TemporaryUISwitches>(INITIAL_UI);
 
+  // HTTP Async Loading State
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Load from mock API on mount (FE-12.4 Setup)
+  useEffect(() => {
+    setIsLoading(true);
+    apiClient.get("/api/workspace")
+      .then((res) => {
+        setRecords(Object.freeze({ ...INITIAL_RECORDS, ...res.data }));
+      })
+      .catch((err) => {
+        console.error("[WorkspaceStore DevTools]: Failed to load workspace configuration.", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
   // FE-09.4 & FE-10.3: Log the entire global state tree object to console whenever it updates
   useEffect(() => {
     console.log("[WorkspaceStore DevTools]: Central State Tree Updated.", {
       records,
       ui,
+      isLoading,
     });
-  }, [records, ui]);
+  }, [records, ui, isLoading]);
 
   // --- FE-09.3: Protected Permanent Records Mutators ---
   const updateProfile = useCallback((displayName: string, contactEmail: string) => {
@@ -97,13 +118,17 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     if (!cleanName || !cleanEmail) return;
 
-    setRecords((prev) =>
-      Object.freeze({
-        ...prev,
-        displayName: cleanName,
-        contactEmail: cleanEmail,
+    setIsLoading(true);
+    apiClient.put("/api/workspace", { displayName: cleanName, contactEmail: cleanEmail })
+      .then((res) => {
+        setRecords((prev) => Object.freeze({ ...prev, ...res.data }));
       })
-    );
+      .catch((err) => {
+        console.error("[WorkspaceStore DevTools]: Failed to update profile settings.", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const updateEnvironment = useCallback((environmentMode: EnvironmentType) => {
@@ -121,48 +146,88 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       logsEnabled = true;
     }
 
-    setRecords((prev) =>
-      Object.freeze({
-        ...prev,
-        environmentMode,
-        maxRateLimit: targetLimit,
-        systemLogsEnabled: logsEnabled,
+    setIsLoading(true);
+    apiClient.put("/api/workspace", {
+      environmentMode,
+      maxRateLimit: targetLimit,
+      systemLogsEnabled: logsEnabled,
+    })
+      .then((res) => {
+        setRecords((prev) => Object.freeze({ ...prev, ...res.data }));
       })
-    );
+      .catch((err) => {
+        console.error("[WorkspaceStore DevTools]: Failed to update environment configuration.", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const updateRateLimit = useCallback((limit: number) => {
     if (isNaN(limit) || limit < 1 || limit > 10000) return;
 
-    setRecords((prev) =>
-      Object.freeze({
-        ...prev,
-        maxRateLimit: limit,
+    setIsLoading(true);
+    apiClient.put("/api/workspace", { maxRateLimit: limit })
+      .then((res) => {
+        setRecords((prev) => Object.freeze({ ...prev, ...res.data }));
       })
-    );
+      .catch((err) => {
+        console.error("[WorkspaceStore DevTools]: Failed to update API limit configuration.", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const toggleEmailAlerts = useCallback(() => {
-    setRecords((prev) =>
-      Object.freeze({
-        ...prev,
-        emailAlertsEnabled: !prev.emailAlertsEnabled,
-      })
-    );
+    setIsLoading(true);
+    setRecords((prev) => {
+      const nextVal = !prev.emailAlertsEnabled;
+      apiClient.put("/api/workspace", { emailAlertsEnabled: nextVal })
+        .then((res) => {
+          setRecords((current) => Object.freeze({ ...current, ...res.data }));
+        })
+        .catch((err) => {
+          console.error("[WorkspaceStore DevTools]: Failed to toggle email alerts.", err);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+      return prev;
+    });
   }, []);
 
   const toggleSystemLogs = useCallback(() => {
-    setRecords((prev) =>
-      Object.freeze({
-        ...prev,
-        systemLogsEnabled: !prev.systemLogsEnabled,
-      })
-    );
+    setIsLoading(true);
+    setRecords((prev) => {
+      const nextVal = !prev.systemLogsEnabled;
+      apiClient.put("/api/workspace", { systemLogsEnabled: nextVal })
+        .then((res) => {
+          setRecords((current) => Object.freeze({ ...current, ...res.data }));
+        })
+        .catch((err) => {
+          console.error("[WorkspaceStore DevTools]: Failed to toggle system logs.", err);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+      return prev;
+    });
   }, []);
 
   const restoreDefaults = useCallback(() => {
-    setRecords(INITIAL_RECORDS);
-    setUi(INITIAL_UI);
+    setIsLoading(true);
+    apiClient.put("/api/workspace", INITIAL_RECORDS)
+      .then((res) => {
+        setRecords(Object.freeze({ ...INITIAL_RECORDS, ...res.data }));
+        setUi(INITIAL_UI);
+      })
+      .catch((err) => {
+        console.error("[WorkspaceStore DevTools]: Failed to restore workspace defaults.", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   // --- FE-09.3: Protected Temporary UI Mutators ---
@@ -196,6 +261,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const contextValue = useMemo<WorkspaceContextType>(
     () => ({
       records,
+      isLoading,
       updateProfile,
       updateEnvironment,
       updateRateLimit,
@@ -209,6 +275,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }),
     [
       records,
+      isLoading,
       updateProfile,
       updateEnvironment,
       updateRateLimit,
