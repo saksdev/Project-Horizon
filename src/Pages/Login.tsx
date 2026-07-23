@@ -5,9 +5,6 @@ import { Button } from "../components/ui/Button";
 import { InputField } from "../components/ui/InputField";
 import { WorkspaceCard } from "../components/ui/WorkspaceCard";
 
-/**
- * Modern Glassmorphic Login view page (FE-13.1 Authentication Fallback).
- */
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,15 +33,12 @@ export default function Login() {
       setIsSubmitting(true);
       setError("");
 
-      // Simulate network authentication request
       setTimeout(() => {
         setIsSubmitting(false);
-        // Save mock session token to browser localStorage
         localStorage.setItem("mock_token", "mock_auth_token_horizon_2026");
         localStorage.setItem("login_success", "true");
-        // Force complete page sync and navigate to dashboard root
         navigate("/", { replace: true });
-        window.location.reload(); // Hard reload to force MSW/Axios token rebinding
+        window.location.reload();
       }, 800);
     },
     [email, password, navigate]

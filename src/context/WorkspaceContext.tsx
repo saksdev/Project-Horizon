@@ -17,7 +17,7 @@ export interface ToastMessage {
   readonly type: "success" | "warning" | "error";
 }
 
-// Slice A: Permanent Workspace Records (FE-09.3 Immutable Data Tree Specification)
+// Permanent records state structure
 export interface PermanentWorkspaceRecords {
   readonly displayName: string;
   readonly contactEmail: string;
@@ -28,15 +28,15 @@ export interface PermanentWorkspaceRecords {
   readonly logs: ReadonlyArray<LogEntry>;
 }
 
-// Slice B: Temporary UI Switches (FE-09.3 Immutable Data Tree Specification)
+// Temporary UI state structure
 export interface TemporaryUISwitches {
   readonly isMobileDrawerOpen: boolean;
   readonly activeTab: string;
   readonly searchQuery: string;
 }
 
+// Permanent Records State & Mutators (Readonly Protected Data Tree)
 export interface WorkspaceContextType {
-  // Permanent Records State & Mutators (Readonly Protected Data Tree)
   readonly records: Readonly<PermanentWorkspaceRecords>;
   readonly isLoading: boolean;
   readonly updateProfile: (displayName: string, contactEmail: string) => Promise<any>;
@@ -52,7 +52,7 @@ export interface WorkspaceContextType {
   readonly setActiveTab: (tab: string) => void;
   readonly setSearchQuery: (query: string) => void;
 
-  // Toast System State & Mutators (FE-13.3)
+  // Toast System State & Mutators
   readonly toasts: ReadonlyArray<ToastMessage>;
   readonly addToast: (message: string, type: "success" | "warning" | "error") => void;
   readonly removeToast: (id: string) => void;
@@ -85,21 +85,13 @@ const INITIAL_UI: TemporaryUISwitches = Object.freeze({
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 /**
- * Workspace Provider Component (FE-09.1, FE-09.3, FE-09.4, FE-13.3)
- * Manages central state slices, enforces data tree protection, and synchronizes state with MSW mock backend client.
+ * Provider component to manage global workspace state.
  */
 export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Permanent State Tree
   const [records, setRecords] = useState<PermanentWorkspaceRecords>(INITIAL_RECORDS);
-
-  // Temporary UI State Tree
   const [ui, setUi] = useState<TemporaryUISwitches>(INITIAL_UI);
-
-  // Toast Alerts State Queue
-  const [toasts, setToasts] = useState<ReadonlyArray<ToastMessage>>([]);
-
-  // HTTP Async Loading State
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [toasts, setToasts] = useState<ReadonlyArray<ToastMessage>>([]);
 
   // remove toast
   const removeToast = useCallback((id: string) => {
@@ -116,7 +108,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   }, []);
 
-  // Load from mock API on mount (FE-12.4 Setup)
+  // Fetch initial configuration on mount
   useEffect(() => {
     setIsLoading(true);
     apiClient.get("/api/workspace")
@@ -136,7 +128,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
   }, [addToast]);
 
-  // Register global network error listener for toast alerts (FE-13.4)
+  // Bind global Axios interceptor events to toast alerts
   useEffect(() => {
     registerNetworkErrorListener((message, type) => {
       addToast(message, type);
@@ -146,7 +138,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [addToast]);
 
-  // FE-09.4 & FE-10.3: Log the entire global state tree object to console whenever it updates
+  // Log changes to the central state tree for debugging
   useEffect(() => {
     console.log("[WorkspaceStore DevTools]: Central State Tree Updated.", {
       records,
@@ -155,7 +147,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   }, [records, ui, isLoading]);
 
-  // --- FE-09.3: Protected Permanent Records Mutators ---
+  // --- Store modification actions ---
   const updateProfile = useCallback((displayName: string, contactEmail: string) => {
     const cleanName = displayName.trim();
     const cleanEmail = contactEmail.trim();
@@ -245,7 +237,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const previousVal = records.emailAlertsEnabled;
     const nextVal = !previousVal;
 
-    // Optimistically update state and broadcast success toast immediately
     setRecords((prev) => Object.freeze({ ...prev, emailAlertsEnabled: nextVal }));
     addToast(nextVal ? "Email validation alerts activated." : "Email validation alerts disabled.", "success");
 
@@ -256,7 +247,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to toggle email alerts.", err);
-        // Rollback state on failure
         setRecords((current) => Object.freeze({ ...current, emailAlertsEnabled: previousVal }));
         addToast("Failed to save email preference on server. Rolled back change.", "error");
         throw err;
@@ -267,7 +257,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const previousVal = records.systemLogsEnabled;
     const nextVal = !previousVal;
 
-    // Optimistically update state and broadcast success toast immediately
     setRecords((prev) => Object.freeze({ ...prev, systemLogsEnabled: nextVal }));
     addToast(nextVal ? "Security logging console activated." : "Security logging console disabled.", "success");
 
@@ -278,7 +267,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to toggle system logs.", err);
-        // Rollback state on failure
         setRecords((current) => Object.freeze({ ...current, systemLogsEnabled: previousVal }));
         addToast("Failed to save logging preference on server. Rolled back change.", "error");
         throw err;
@@ -304,7 +292,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
   }, [addToast]);
 
-  // --- FE-09.3: Protected Temporary UI Mutators ---
+  // --- UI state modification actions ---
   const toggleMobileDrawer = useCallback((open?: boolean) => {
     setUi((prev) =>
       Object.freeze({
@@ -372,9 +360,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   return <WorkspaceContext.Provider value={contextValue}>{children}</WorkspaceContext.Provider>;
 };
 
-/**
- * Custom Hook to access central workspace state slices and action modifiers.
- */
 export const useWorkspace = (): WorkspaceContextType => {
   const context = useContext(WorkspaceContext);
   if (!context) {

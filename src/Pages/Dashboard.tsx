@@ -19,32 +19,24 @@ const TABS = [
   { id: "reports", label: "Reports & Audits", icon: FileText },
 ];
 
-/**
- * Main Dashboard Workspace View Component.
- * Orchestrates URL search parameters, dynamic tab views, real-time log search, and browser history layers.
- * Subscribes to central WorkspaceContext (FE-10.1 & FE-10.3).
- */
+
 export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { records } = useWorkspace();
 
-  // Route Parameter Parsing (FE-08.1 & FE-08.3)
   const rawTab = searchParams.get("tab") || "";
   const activeTab = TABS.some((t) => t.id === rawTab) ? rawTab : "overview";
   const searchQuery = searchParams.get("query") || "";
 
-  // FE-14.1: Local input state and custom debouncer integration
+  // Local state for search input and debouncer hook
   const [inputValue, setInputValue] = useState(searchQuery);
   const debouncedQuery = useDebounce(inputValue, 1000);
 
-  // Sync local input box if URL search query changes elsewhere (e.g. navigation / reload)
   useEffect(() => {
     setInputValue(searchQuery);
   }, [searchQuery]);
 
-  // Sync debounced search value to URL query parameters once typing stops
   useEffect(() => {
-    // Only update searchParams if the value has actually changed to prevent render loops
     const currentQuery = searchParams.get("query") || "";
     const cleanDebounced = debouncedQuery.trim();
 
@@ -57,9 +49,7 @@ export default function Dashboard() {
     }
   }, [debouncedQuery, activeTab, searchParams, setSearchParams]);
 
-  /**
-   * Handles tab switching by updating the URL search parameter.
-   */
+
   const handleTabChange = useCallback(
     (tabId: string) => {
       const nextParams: { tab: string; query?: string } = { tab: tabId };
@@ -71,16 +61,11 @@ export default function Dashboard() {
     [searchQuery, setSearchParams]
   );
 
-  /**
-   * Handles real-time search query input mutations (updates local state instantly).
-   */
+
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   }, []);
 
-  /**
-   * Memoized log filtering logic subscribing directly to central store records.logs (FE-10.1 & FE-10.3).
-   */
   const filteredLogs = useMemo(() => {
     const term = searchQuery.trim().toLowerCase();
     if (!term) return records.logs;
@@ -95,7 +80,6 @@ export default function Dashboard() {
 
   return (
     <div className="w-full space-y-3">
-      {/* Header & Responsive Navigation Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-3 border-b border-slate-200 gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-brand-header tracking-tight">

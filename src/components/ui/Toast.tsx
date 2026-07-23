@@ -7,22 +7,16 @@ interface ToastCardProps {
   onDismiss: (id: string) => void;
 }
 
-/**
- * Modern Compact Toast alert card notification (FE-13.3).
- * Sleek, single-line, lightweight layout matching company standards.
- */
+/** A compact, self-dismissing toast notification card. */
 export const ToastCard = memo(function ToastCard({ toast, onDismiss }: ToastCardProps) {
   const { id, message, type } = toast;
 
   useEffect(() => {
-    console.log(`[Toast System]: Broadcasted alert - ID: ${id}, Mode: ${type}, Content: "${message}"`);
-    
-    // Auto-dismiss this toast after 4 seconds
     const timer = setTimeout(() => {
       onDismiss(id);
     }, 4000);
 
-    // Clean up timer handle on component unmount (manual close or page shifts) to avoid memory leaks
+
     return () => {
       clearTimeout(timer);
     };

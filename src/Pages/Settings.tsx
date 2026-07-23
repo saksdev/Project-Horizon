@@ -41,12 +41,10 @@ export default function SettingsOptionsPanel() {
   const [maxRateLimit, setMaxRateLimit] = useState<number>(records.maxRateLimit);
   const [errors, setErrors] = useState<ValidationErrors>({});
 
-  // FE-12.4: Latency profiling sandbox states
   const [latency, setLatency] = useState<number | null>(null);
   const [latencyStatus, setLatencyStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
   const [errorLog, setErrorLog] = useState<string>("");
 
-  // FE-10.1: Synchronize local state with global workspace store records when store updates
   useEffect(() => {
     setDisplayName(records.displayName);
     setContactEmail(records.contactEmail);
@@ -245,7 +243,7 @@ export default function SettingsOptionsPanel() {
       });
   }, [isFormInvalid, displayName, contactEmail, maxRateLimit, records.displayName, records.contactEmail, records.maxRateLimit, sanitizeString, updateProfile, updateRateLimit, addToast]);
 
-  // FE-12.4: Latency diagnostic profiling trigger
+  // Latency diagnostic profiling trigger
   const testLatency = useCallback(async () => {
     setLatencyStatus("testing");
     setErrorLog("");
@@ -261,7 +259,7 @@ export default function SettingsOptionsPanel() {
     }
   }, []);
 
-  // FE-12.4: Test expired token 401 response interceptor
+  // Test expired token 401 response interceptor
   const triggerError401 = useCallback(async () => {
     setErrorLog("");
     try {
@@ -271,7 +269,7 @@ export default function SettingsOptionsPanel() {
     }
   }, []);
 
-  // FE-12.4: Test server failure 500 response interceptor
+  // Test server failure 500 response interceptor
   const triggerError500 = useCallback(async () => {
     setErrorLog("");
     try {
@@ -473,7 +471,7 @@ export default function SettingsOptionsPanel() {
           </div>
         </div>
 
-        {/* FE-12.4: Network Connectivity Testing Sandbox */}
+        {/* Network Connectivity Testing Sandbox */}
         <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 md:col-span-2 space-y-3.5 shadow-inner">
           <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
             <div className="flex items-center gap-2">

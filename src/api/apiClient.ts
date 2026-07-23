@@ -4,28 +4,21 @@ export type NetworkErrorListener = (message: string, type: "error" | "warning") 
 
 let errorListener: NetworkErrorListener | null = null;
 
-/**
- * Registers a global callback listener to handle network failures and server crashes (FE-13.4).
- */
 export const registerNetworkErrorListener = (listener: NetworkErrorListener | null) => {
   errorListener = listener;
 };
 
-/**
- * Centralized Axios client instance configured with default parameters (FE-11.1).
- */
+/** Centralized Axios client instance configured with default parameters */
+
 const apiClient = axios.create({
-  baseURL: "", // Empty baseURL to support relative API paths intercepted by MSW
-  timeout: 10000, // Enforce a 10,000ms request timeout limit
+  baseURL: "",
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-/**
- * Axios Request Interceptor (FE-11.1 & FE-13.1).
- * Automatically injects a bearer authorization token dynamically from localStorage.
- */
+
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("mock_token");
@@ -39,10 +32,8 @@ apiClient.interceptors.request.use(
   }
 );
 
-/**
- * Axios Response Interceptor (FE-11.3, FE-13.1 & FE-13.4).
- * Intercepts incoming responses globally to handle token expiration (401/403), server crashes (5xx), and offline states.
- */
+/** handle token expiration (401/403), server crashes (5xx), and offline states. */
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
