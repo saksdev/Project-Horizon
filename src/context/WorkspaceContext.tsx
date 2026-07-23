@@ -11,6 +11,12 @@ export interface LogEntry {
   readonly time: string;
 }
 
+export interface ToastMessage {
+  readonly id: string;
+  readonly message: string;
+  readonly type: "success" | "warning" | "error";
+}
+
 // Slice A: Permanent Workspace Records (FE-09.3 Immutable Data Tree Specification)
 export interface PermanentWorkspaceRecords {
   readonly displayName: string;
@@ -45,6 +51,11 @@ export interface WorkspaceContextType {
   readonly toggleMobileDrawer: (open?: boolean) => void;
   readonly setActiveTab: (tab: string) => void;
   readonly setSearchQuery: (query: string) => void;
+
+  // Toast System State & Mutators (FE-13.3)
+  readonly toasts: ReadonlyArray<ToastMessage>;
+  readonly addToast: (message: string, type: "success" | "warning" | "error") => void;
+  readonly removeToast: (id: string) => void;
 }
 
 const INITIAL_LOGS: ReadonlyArray<LogEntry> = Object.freeze([
@@ -74,7 +85,7 @@ const INITIAL_UI: TemporaryUISwitches = Object.freeze({
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 /**
- * Workspace Provider Component (FE-09.1, FE-09.3, FE-09.4)
+ * Workspace Provider Component (FE-09.1, FE-09.3, FE-09.4, FE-13.3)
  * Manages central state slices, enforces data tree protection, and synchronizes state with MSW mock backend client.
  */
 export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -84,8 +95,28 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Temporary UI State Tree
   const [ui, setUi] = useState<TemporaryUISwitches>(INITIAL_UI);
 
+  // Toast Alerts State Queue
+  const [toasts, setToasts] = useState<ReadonlyArray<ToastMessage>>([]);
+
   // HTTP Async Loading State
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const addToast = useCallback((message: string, type: "success" | "warning" | "error") => {
+    setToasts((prev) => {
+      const isDuplicate = prev.some((t) => t.message === message);
+      if (isDuplicate) return prev;
+
+      const id = Math.random().toString(36).substring(2, 9);
+      setTimeout(() => {
+        removeToast(id);
+      }, 4000);
+      return [{ id, message, type }, ...prev];
+    });
+  }, [removeToast]);
 
   // Load from mock API on mount (FE-12.4 Setup)
   useEffect(() => {
@@ -93,14 +124,19 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     apiClient.get("/api/workspace")
       .then((res) => {
         setRecords(Object.freeze({ ...INITIAL_RECORDS, ...res.data }));
+        if (localStorage.getItem("login_success")) {
+          addToast("Authenticated successfully. Welcome to Horizon!", "success");
+          localStorage.removeItem("login_success");
+        }
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to load workspace configuration.", err);
+        addToast("Failed to fetch initial workspace configurations from server.", "error");
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [addToast]);
 
   // FE-09.4 & FE-10.3: Log the entire global state tree object to console whenever it updates
   useEffect(() => {
@@ -124,16 +160,18 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return apiClient.put("/api/workspace", { displayName: cleanName, contactEmail: cleanEmail })
       .then((res) => {
         setRecords((prev) => Object.freeze({ ...prev, ...res.data }));
+        addToast("Workspace profile settings synchronized successfully.", "success");
         return res.data;
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to update profile settings.", err);
+        addToast("Failed to save profile changes to central server.", "error");
         throw err;
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [addToast]);
 
   const updateEnvironment = useCallback((environmentMode: EnvironmentType) => {
     const validModes: EnvironmentType[] = ["development", "staging", "production"];
@@ -160,16 +198,18 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     })
       .then((res) => {
         setRecords((prev) => Object.freeze({ ...prev, ...res.data }));
+        addToast(`Runtime switched to ${environmentMode.toUpperCase()} mode. API rate scaling updated.`, "success");
         return res.data;
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to update environment configuration.", err);
+        addToast("Server failed to register environment change.", "error");
         throw err;
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [addToast]);
 
   const updateRateLimit = useCallback((limit: number) => {
     if (isNaN(limit) || limit < 1 || limit > 10000) {
@@ -180,20 +220,27 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return apiClient.put("/api/workspace", { maxRateLimit: limit })
       .then((res) => {
         setRecords((prev) => Object.freeze({ ...prev, ...res.data }));
+        addToast(`API rate limit threshold updated to ${limit.toLocaleString()} req/min.`, "success");
         return res.data;
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to update API limit configuration.", err);
+        addToast("Server rejected API rate threshold changes.", "error");
         throw err;
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [addToast]);
 
   const toggleEmailAlerts = useCallback(() => {
-    setIsLoading(true);
-    let nextVal = !records.emailAlertsEnabled;
+    const previousVal = records.emailAlertsEnabled;
+    const nextVal = !previousVal;
+
+    // Optimistically update state and broadcast success toast immediately
+    setRecords((prev) => Object.freeze({ ...prev, emailAlertsEnabled: nextVal }));
+    addToast(nextVal ? "Email validation alerts activated." : "Email validation alerts disabled.", "success");
+
     return apiClient.put("/api/workspace", { emailAlertsEnabled: nextVal })
       .then((res) => {
         setRecords((current) => Object.freeze({ ...current, ...res.data }));
@@ -201,16 +248,21 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to toggle email alerts.", err);
+        // Rollback state on failure
+        setRecords((current) => Object.freeze({ ...current, emailAlertsEnabled: previousVal }));
+        addToast("Failed to save email preference on server. Rolled back change.", "error");
         throw err;
-      })
-      .finally(() => {
-        setIsLoading(false);
       });
-  }, [records.emailAlertsEnabled]);
+  }, [records.emailAlertsEnabled, addToast]);
 
   const toggleSystemLogs = useCallback(() => {
-    setIsLoading(true);
-    let nextVal = !records.systemLogsEnabled;
+    const previousVal = records.systemLogsEnabled;
+    const nextVal = !previousVal;
+
+    // Optimistically update state and broadcast success toast immediately
+    setRecords((prev) => Object.freeze({ ...prev, systemLogsEnabled: nextVal }));
+    addToast(nextVal ? "Security logging console activated." : "Security logging console disabled.", "success");
+
     return apiClient.put("/api/workspace", { systemLogsEnabled: nextVal })
       .then((res) => {
         setRecords((current) => Object.freeze({ ...current, ...res.data }));
@@ -218,12 +270,12 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to toggle system logs.", err);
+        // Rollback state on failure
+        setRecords((current) => Object.freeze({ ...current, systemLogsEnabled: previousVal }));
+        addToast("Failed to save logging preference on server. Rolled back change.", "error");
         throw err;
-      })
-      .finally(() => {
-        setIsLoading(false);
       });
-  }, [records.systemLogsEnabled]);
+  }, [records.systemLogsEnabled, addToast]);
 
   const restoreDefaults = useCallback(() => {
     setIsLoading(true);
@@ -231,16 +283,18 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .then((res) => {
         setRecords(Object.freeze({ ...INITIAL_RECORDS, ...res.data }));
         setUi(INITIAL_UI);
+        addToast("Workspace variables reset back to clean defaults.", "success");
         return res.data;
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to restore workspace defaults.", err);
+        addToast("Failed to communicate defaults request to mock server.", "error");
         throw err;
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [addToast]);
 
   // --- FE-09.3: Protected Temporary UI Mutators ---
   const toggleMobileDrawer = useCallback((open?: boolean) => {
@@ -284,6 +338,9 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       toggleMobileDrawer,
       setActiveTab,
       setSearchQuery,
+      toasts,
+      addToast,
+      removeToast,
     }),
     [
       records,
@@ -298,6 +355,9 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       toggleMobileDrawer,
       setActiveTab,
       setSearchQuery,
+      toasts,
+      addToast,
+      removeToast,
     ]
   );
 

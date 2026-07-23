@@ -32,6 +32,7 @@ export default function SettingsOptionsPanel() {
     toggleEmailAlerts,
     toggleSystemLogs,
     restoreDefaults,
+    addToast,
   } = useWorkspace();
 
   const [displayName, setDisplayName] = useState(records.displayName);
@@ -215,11 +216,25 @@ export default function SettingsOptionsPanel() {
 
     setErrors({}); // Reset local errors before submit
 
-    // Dispatch action modifiers to central store (FE-10.1 & FE-13.1 Server Exception Mapping)
-    updateProfile(safeName, safeEmail)
-      .then(() => {
-        return updateRateLimit(maxRateLimit);
-      })
+    const isProfileDirty = safeName !== records.displayName || safeEmail !== records.contactEmail;
+    const isRateLimitDirty = maxRateLimit !== records.maxRateLimit;
+
+    const promises: Promise<any>[] = [];
+
+    if (isProfileDirty) {
+      promises.push(updateProfile(safeName, safeEmail));
+    }
+
+    if (isRateLimitDirty) {
+      promises.push(updateRateLimit(maxRateLimit));
+    }
+
+    if (promises.length === 0) {
+      addToast("No changes detected in profile settings.", "warning");
+      return;
+    }
+
+    Promise.all(promises)
       .catch((err) => {
         if (err.response && err.response.data && err.response.data.errors) {
           setErrors((prev) => ({
@@ -228,7 +243,7 @@ export default function SettingsOptionsPanel() {
           }));
         }
       });
-  }, [isFormInvalid, displayName, contactEmail, maxRateLimit, sanitizeString, updateProfile, updateRateLimit]);
+  }, [isFormInvalid, displayName, contactEmail, maxRateLimit, records.displayName, records.contactEmail, records.maxRateLimit, sanitizeString, updateProfile, updateRateLimit, addToast]);
 
   // FE-12.4: Latency diagnostic profiling trigger
   const testLatency = useCallback(async () => {

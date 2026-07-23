@@ -106,11 +106,10 @@ export default function Dashboard() {
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${
-                    isActive
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${isActive
                       ? "bg-white text-blue-600 shadow-sm"
                       : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   <span>{tab.label}</span>
@@ -136,7 +135,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 shrink-0 self-end md:self-center">
           <Filter className="w-3.5 h-3.5 text-blue-600 shrink-0" />
           <span className="shrink-0">Active Query Param:</span>
-          <code 
+          <code
             className="bg-slate-100 px-2 py-0.5 rounded text-blue-600 font-mono font-bold truncate max-w-[160px] sm:max-w-[220px] inline-block"
             title={searchQuery ? `?query=${encodeURIComponent(searchQuery)}` : "None"}
           >
@@ -231,13 +230,12 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-2 font-mono text-xs text-slate-700 overflow-x-auto">
                       <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          log.level === "INFO"
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${log.level === "INFO"
                             ? "bg-blue-100 text-blue-700"
                             : log.level === "WARN"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-emerald-100 text-emerald-700"
-                        }`}
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-emerald-100 text-emerald-700"
+                          }`}
                       >
                         {log.level}
                       </span>

@@ -12,8 +12,8 @@ const Sidebar = memo(function Sidebar({ isOpen, closeDrawer }: SidebarProps) {
     <>
       {/* Mobile Backdrop */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50 md:hidden" 
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
           onClick={closeDrawer}
         />
       )}
@@ -47,10 +47,9 @@ const Sidebar = memo(function Sidebar({ isOpen, closeDrawer }: SidebarProps) {
                   to={link.path}
                   onClick={closeDrawer}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`
                   }
                 >
