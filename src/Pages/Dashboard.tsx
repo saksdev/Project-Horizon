@@ -38,13 +38,13 @@ export default function Dashboard() {
    */
   const handleTabChange = useCallback(
     (tabId: string) => {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.set("tab", tabId);
-        return next;
-      });
+      const nextParams: { tab: string; query?: string } = { tab: tabId };
+      if (searchQuery.trim()) {
+        nextParams.query = searchQuery.trim();
+      }
+      setSearchParams(nextParams);
     },
-    [setSearchParams]
+    [searchQuery, setSearchParams]
   );
 
   /**
@@ -54,20 +54,13 @@ export default function Dashboard() {
   const handleQueryChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          if (val) {
-            next.set("query", val);
-          } else {
-            next.delete("query");
-          }
-          return next;
-        },
-        { replace: true }
-      );
+      const nextParams: { tab: string; query?: string } = { tab: activeTab };
+      if (val.trim()) {
+        nextParams.query = val.trim();
+      }
+      setSearchParams(nextParams, { replace: true });
     },
-    [setSearchParams]
+    [activeTab, setSearchParams]
   );
 
   /**
