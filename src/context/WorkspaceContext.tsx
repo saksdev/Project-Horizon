@@ -33,12 +33,12 @@ export interface WorkspaceContextType {
   // Permanent Records State & Mutators (Readonly Protected Data Tree)
   readonly records: Readonly<PermanentWorkspaceRecords>;
   readonly isLoading: boolean;
-  readonly updateProfile: (displayName: string, contactEmail: string) => void;
-  readonly updateEnvironment: (environmentMode: EnvironmentType) => void;
-  readonly updateRateLimit: (limit: number) => void;
-  readonly toggleEmailAlerts: () => void;
-  readonly toggleSystemLogs: () => void;
-  readonly restoreDefaults: () => void;
+  readonly updateProfile: (displayName: string, contactEmail: string) => Promise<any>;
+  readonly updateEnvironment: (environmentMode: EnvironmentType) => Promise<any>;
+  readonly updateRateLimit: (limit: number) => Promise<any>;
+  readonly toggleEmailAlerts: () => Promise<any>;
+  readonly toggleSystemLogs: () => Promise<any>;
+  readonly restoreDefaults: () => Promise<any>;
 
   // Temporary UI Switches State & Mutators (Readonly Protected Data Tree)
   readonly ui: Readonly<TemporaryUISwitches>;
@@ -116,15 +116,19 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const cleanName = displayName.trim();
     const cleanEmail = contactEmail.trim();
 
-    if (!cleanName || !cleanEmail) return;
+    if (!cleanName || !cleanEmail) {
+      return Promise.reject(new Error("Invalid Profile Parameters"));
+    }
 
     setIsLoading(true);
-    apiClient.put("/api/workspace", { displayName: cleanName, contactEmail: cleanEmail })
+    return apiClient.put("/api/workspace", { displayName: cleanName, contactEmail: cleanEmail })
       .then((res) => {
         setRecords((prev) => Object.freeze({ ...prev, ...res.data }));
+        return res.data;
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to update profile settings.", err);
+        throw err;
       })
       .finally(() => {
         setIsLoading(false);
@@ -133,7 +137,9 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const updateEnvironment = useCallback((environmentMode: EnvironmentType) => {
     const validModes: EnvironmentType[] = ["development", "staging", "production"];
-    if (!validModes.includes(environmentMode)) return;
+    if (!validModes.includes(environmentMode)) {
+      return Promise.reject(new Error("Invalid Environment Mode"));
+    }
 
     let targetLimit = 1000;
     let logsEnabled = false;
@@ -147,16 +153,18 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     setIsLoading(true);
-    apiClient.put("/api/workspace", {
+    return apiClient.put("/api/workspace", {
       environmentMode,
       maxRateLimit: targetLimit,
       systemLogsEnabled: logsEnabled,
     })
       .then((res) => {
         setRecords((prev) => Object.freeze({ ...prev, ...res.data }));
+        return res.data;
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to update environment configuration.", err);
+        throw err;
       })
       .finally(() => {
         setIsLoading(false);
@@ -164,15 +172,19 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const updateRateLimit = useCallback((limit: number) => {
-    if (isNaN(limit) || limit < 1 || limit > 10000) return;
+    if (isNaN(limit) || limit < 1 || limit > 10000) {
+      return Promise.reject(new Error("Invalid Rate Limit Parameter"));
+    }
 
     setIsLoading(true);
-    apiClient.put("/api/workspace", { maxRateLimit: limit })
+    return apiClient.put("/api/workspace", { maxRateLimit: limit })
       .then((res) => {
         setRecords((prev) => Object.freeze({ ...prev, ...res.data }));
+        return res.data;
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to update API limit configuration.", err);
+        throw err;
       })
       .finally(() => {
         setIsLoading(false);
@@ -181,49 +193,49 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const toggleEmailAlerts = useCallback(() => {
     setIsLoading(true);
-    setRecords((prev) => {
-      const nextVal = !prev.emailAlertsEnabled;
-      apiClient.put("/api/workspace", { emailAlertsEnabled: nextVal })
-        .then((res) => {
-          setRecords((current) => Object.freeze({ ...current, ...res.data }));
-        })
-        .catch((err) => {
-          console.error("[WorkspaceStore DevTools]: Failed to toggle email alerts.", err);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-      return prev;
-    });
-  }, []);
+    let nextVal = !records.emailAlertsEnabled;
+    return apiClient.put("/api/workspace", { emailAlertsEnabled: nextVal })
+      .then((res) => {
+        setRecords((current) => Object.freeze({ ...current, ...res.data }));
+        return res.data;
+      })
+      .catch((err) => {
+        console.error("[WorkspaceStore DevTools]: Failed to toggle email alerts.", err);
+        throw err;
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [records.emailAlertsEnabled]);
 
   const toggleSystemLogs = useCallback(() => {
     setIsLoading(true);
-    setRecords((prev) => {
-      const nextVal = !prev.systemLogsEnabled;
-      apiClient.put("/api/workspace", { systemLogsEnabled: nextVal })
-        .then((res) => {
-          setRecords((current) => Object.freeze({ ...current, ...res.data }));
-        })
-        .catch((err) => {
-          console.error("[WorkspaceStore DevTools]: Failed to toggle system logs.", err);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-      return prev;
-    });
-  }, []);
+    let nextVal = !records.systemLogsEnabled;
+    return apiClient.put("/api/workspace", { systemLogsEnabled: nextVal })
+      .then((res) => {
+        setRecords((current) => Object.freeze({ ...current, ...res.data }));
+        return res.data;
+      })
+      .catch((err) => {
+        console.error("[WorkspaceStore DevTools]: Failed to toggle system logs.", err);
+        throw err;
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [records.systemLogsEnabled]);
 
   const restoreDefaults = useCallback(() => {
     setIsLoading(true);
-    apiClient.put("/api/workspace", INITIAL_RECORDS)
+    return apiClient.put("/api/workspace", INITIAL_RECORDS)
       .then((res) => {
         setRecords(Object.freeze({ ...INITIAL_RECORDS, ...res.data }));
         setUi(INITIAL_UI);
+        return res.data;
       })
       .catch((err) => {
         console.error("[WorkspaceStore DevTools]: Failed to restore workspace defaults.", err);
+        throw err;
       })
       .finally(() => {
         setIsLoading(false);

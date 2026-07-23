@@ -213,9 +213,21 @@ export default function SettingsOptionsPanel() {
     const safeName = sanitizeString(displayName);
     const safeEmail = sanitizeString(contactEmail);
 
-    // Dispatch action modifiers to central store (FE-10.1)
-    updateProfile(safeName, safeEmail);
-    updateRateLimit(maxRateLimit);
+    setErrors({}); // Reset local errors before submit
+
+    // Dispatch action modifiers to central store (FE-10.1 & FE-13.1 Server Exception Mapping)
+    updateProfile(safeName, safeEmail)
+      .then(() => {
+        return updateRateLimit(maxRateLimit);
+      })
+      .catch((err) => {
+        if (err.response && err.response.data && err.response.data.errors) {
+          setErrors((prev) => ({
+            ...prev,
+            ...err.response.data.errors,
+          }));
+        }
+      });
   }, [isFormInvalid, displayName, contactEmail, maxRateLimit, sanitizeString, updateProfile, updateRateLimit]);
 
   // FE-12.4: Latency diagnostic profiling trigger

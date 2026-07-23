@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useCallback } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "./components/layout/Sidebar/Sidebar";
@@ -7,13 +7,34 @@ import Dashboard from "./Pages/Dashboard";
 import Projects from "./Pages/Projects";
 import Users from "./Pages/Users";
 import Settings from "./Pages/Settings";
+import Login from "./Pages/Login";
 import { useWorkspace } from "./context/WorkspaceContext";
 
 export default function App() {
   const { ui, toggleMobileDrawer } = useWorkspace();
+  const location = useLocation();
 
   const closeDrawer = useCallback(() => toggleMobileDrawer(false), [toggleMobileDrawer]);
   const openDrawer = useCallback(() => toggleMobileDrawer(true), [toggleMobileDrawer]);
+
+  // Auth Guard checking for active bearer credentials (FE-13.1)
+  const token = localStorage.getItem("mock_token");
+  const isAuthenticated = !!token;
+
+  // Unauthenticated fallback redirects
+  if (!isAuthenticated && location.pathname !== "/login") {
+    return <Navigate to="/login" replace={true} />;
+  }
+
+  // Prevent authenticated user from visiting login page
+  if (isAuthenticated && location.pathname === "/login") {
+    return <Navigate to="/" replace={true} />;
+  }
+
+  // Render Login page standalone without sidebar layout frame
+  if (location.pathname === "/login") {
+    return <Login />;
+  }
 
   return (
     <WorkspaceLayout>
@@ -36,6 +57,8 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/users" element={<Users />} />
             <Route path="/settings" element={<Settings />} />
+            {/* Fallback wildcard to root */}
+            <Route path="*" element={<Navigate to="/" replace={true} />} />
           </Routes>
         </section>
       </main>

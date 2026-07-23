@@ -38,6 +38,21 @@ export const handlers = [
     // Inject 1000ms delay to simulate network write latency
     await delay(1000);
 
+    // FE-13.1 Server-Side Validation Mock Triggers
+    const validationErrors: Record<string, string> = {};
+
+    if (updatedData.displayName !== undefined && updatedData.displayName.trim().length < 3) {
+      validationErrors.displayName = "Server requires at least 3 characters for Display Name.";
+    }
+
+    if (updatedData.contactEmail !== undefined && updatedData.contactEmail.trim().toLowerCase().includes("@reject.com")) {
+      validationErrors.contactEmail = "This administrator email domain is blacklisted by the server (@reject.com).";
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      return HttpResponse.json({ errors: validationErrors }, { status: 400 });
+    }
+
     // Enforce data bounds and update in-memory DB (FE-09.3 style validation)
     mockDb = {
       ...mockDb,

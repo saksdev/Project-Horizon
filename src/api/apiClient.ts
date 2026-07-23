@@ -12,13 +12,13 @@ const apiClient = axios.create({
 });
 
 /**
- * Axios Request Interceptor (FE-11.1).
- * Automatically injects a bearer authorization token into all outgoing requests.
+ * Axios Request Interceptor (FE-11.1 & FE-13.1).
+ * Automatically injects a bearer authorization token dynamically from localStorage.
  */
 apiClient.interceptors.request.use(
   (config) => {
-    const token = "mock_auth_token_horizon_2026";
-    if (config.headers) {
+    const token = localStorage.getItem("mock_token");
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -29,8 +29,8 @@ apiClient.interceptors.request.use(
 );
 
 /**
- * Axios Response Interceptor (FE-11.3).
- * Intercepts incoming responses globally to handle token expiration (401), server errors (5xx), and connectivity failures.
+ * Axios Response Interceptor (FE-11.3 & FE-13.1).
+ * Intercepts incoming responses globally to handle token expiration (401/403), server errors (5xx), and connectivity failures.
  */
 apiClient.interceptors.response.use(
   (response) => response,
@@ -38,8 +38,12 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const { status } = error.response;
 
-      if (status === 401) {
-        console.warn("[Workspace API Interceptor]: Unauthorized access or expired token detected (401).");
+      if (status === 401 || status === 403) {
+        console.warn("[Workspace API Interceptor]: Unauthorized access or expired token detected (401/403). Clearing session token and redirecting to login...");
+        localStorage.removeItem("mock_token");
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
       } else if (status >= 500) {
         console.error(`[Workspace API Interceptor]: Central server error encountered (${status}).`);
       }
