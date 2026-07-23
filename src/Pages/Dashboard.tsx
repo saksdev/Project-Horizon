@@ -35,7 +35,7 @@ export default function Dashboard() {
 
   // FE-14.1: Local input state and custom debouncer integration
   const [inputValue, setInputValue] = useState(searchQuery);
-  const debouncedQuery = useDebounce(inputValue, 300);
+  const debouncedQuery = useDebounce(inputValue, 1000);
 
   // Sync local input box if URL search query changes elsewhere (e.g. navigation / reload)
   useEffect(() => {
@@ -121,11 +121,10 @@ export default function Dashboard() {
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${
-                    isActive
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
-                  }`}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${isActive
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
+                    }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   <span>{tab.label}</span>
@@ -246,13 +245,12 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-2 font-mono text-xs text-slate-700 overflow-x-auto">
                       <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          log.level === "INFO"
-                            ? "bg-blue-100 text-blue-700"
-                            : log.level === "WARN"
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${log.level === "INFO"
+                          ? "bg-blue-100 text-blue-700"
+                          : log.level === "WARN"
                             ? "bg-amber-100 text-amber-700"
                             : "bg-emerald-100 text-emerald-700"
-                        }`}
+                          }`}
                       >
                         {log.level}
                       </span>

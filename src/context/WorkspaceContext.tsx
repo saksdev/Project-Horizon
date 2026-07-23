@@ -101,6 +101,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // HTTP Async Loading State
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // remove toast
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
@@ -111,12 +112,9 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (isDuplicate) return prev;
 
       const id = Math.random().toString(36).substring(2, 9);
-      setTimeout(() => {
-        removeToast(id);
-      }, 4000);
       return [{ id, message, type }, ...prev];
     });
-  }, [removeToast]);
+  }, []);
 
   // Load from mock API on mount (FE-12.4 Setup)
   useEffect(() => {

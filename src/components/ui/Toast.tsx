@@ -16,7 +16,17 @@ export const ToastCard = memo(function ToastCard({ toast, onDismiss }: ToastCard
 
   useEffect(() => {
     console.log(`[Toast System]: Broadcasted alert - ID: ${id}, Mode: ${type}, Content: "${message}"`);
-  }, [id, message, type]);
+    
+    // Auto-dismiss this toast after 4 seconds
+    const timer = setTimeout(() => {
+      onDismiss(id);
+    }, 4000);
+
+    // Clean up timer handle on component unmount (manual close or page shifts) to avoid memory leaks
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [id, message, type, onDismiss]);
 
   return (
     <div
