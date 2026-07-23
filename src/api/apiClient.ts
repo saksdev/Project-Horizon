@@ -1,5 +1,16 @@
 import axios from "axios";
 
+export type NetworkErrorListener = (message: string, type: "error" | "warning") => void;
+
+let errorListener: NetworkErrorListener | null = null;
+
+/**
+ * Registers a global callback listener to handle network failures and server crashes (FE-13.4).
+ */
+export const registerNetworkErrorListener = (listener: NetworkErrorListener | null) => {
+  errorListener = listener;
+};
+
 /**
  * Centralized Axios client instance configured with default parameters (FE-11.1).
  */
@@ -29,8 +40,8 @@ apiClient.interceptors.request.use(
 );
 
 /**
- * Axios Response Interceptor (FE-11.3 & FE-13.1).
- * Intercepts incoming responses globally to handle token expiration (401/403), server errors (5xx), and connectivity failures.
+ * Axios Response Interceptor (FE-11.3, FE-13.1 & FE-13.4).
+ * Intercepts incoming responses globally to handle token expiration (401/403), server crashes (5xx), and offline states.
  */
 apiClient.interceptors.response.use(
   (response) => response,
@@ -46,9 +57,15 @@ apiClient.interceptors.response.use(
         }
       } else if (status >= 500) {
         console.error(`[Workspace API Interceptor]: Central server error encountered (${status}).`);
+        if (errorListener) {
+          errorListener(`The central server encountered a crash (${status}).`, "error");
+        }
       }
     } else {
       console.error("[Workspace API Interceptor]: Network connection lost or target server unreachable.");
+      if (errorListener) {
+        errorListener("Network connection lost or target server unreachable.", "warning");
+      }
     }
     return Promise.reject(error);
   }

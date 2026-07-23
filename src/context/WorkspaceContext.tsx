@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import apiClient from "../api/apiClient";
+import apiClient, { registerNetworkErrorListener } from "../api/apiClient";
 
 export type EnvironmentType = "development" | "staging" | "production";
 
@@ -136,6 +136,16 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .finally(() => {
         setIsLoading(false);
       });
+  }, [addToast]);
+
+  // Register global network error listener for toast alerts (FE-13.4)
+  useEffect(() => {
+    registerNetworkErrorListener((message, type) => {
+      addToast(message, type);
+    });
+    return () => {
+      registerNetworkErrorListener(null);
+    };
   }, [addToast]);
 
   // FE-09.4 & FE-10.3: Log the entire global state tree object to console whenever it updates
