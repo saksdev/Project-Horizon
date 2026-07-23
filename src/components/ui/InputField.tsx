@@ -14,7 +14,7 @@ export const InputField = memo(
           {label && (
             <label
               htmlFor={id}
-              className="block text-xs font-bold text-slate-500 uppercase tracking-wider select-none"
+              className="block text-xs font-bold text-brand-text uppercase tracking-wider select-none"
             >
               {label}
             </label>

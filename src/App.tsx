@@ -19,13 +19,13 @@ export default function App() {
     <WorkspaceLayout>
       <Sidebar isOpen={ui.isMobileDrawerOpen} closeDrawer={closeDrawer} />
 
-      <main className="flex h-screen flex-1 flex-col overflow-hidden bg-slate-100">
+      <main className="flex h-screen flex-1 flex-col overflow-hidden bg-brand-bg">
         {/* Mobile Header */}
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm md:hidden">
-          <button onClick={openDrawer} className="p-2 hover:bg-slate-100 text-slate-800 active:scale-95 rounded-lg transition-all" aria-label="Toggle Menu">
+          <button onClick={openDrawer} className="p-2 hover:bg-slate-100 text-brand-header active:scale-95 rounded-lg transition-all" aria-label="Toggle Menu">
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-semibold text-slate-800">Horizon</h1>
+          <h1 className="text-lg font-semibold text-brand-header">Horizon</h1>
           <div className="w-8" />
         </header>
 

@@ -83,10 +83,10 @@ export default function Dashboard() {
       {/* Header & Responsive Navigation Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-3 border-b border-slate-200 gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-brand-header tracking-tight">
             Dashboard Workspace ({records.displayName})
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-brand-text mt-0.5">
             Real-time metrics, telemetry coordinates, and query parameter
             history controls.
           </p>
@@ -149,11 +149,11 @@ export default function Dashboard() {
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm min-h-[300px]" role="tabpanel" id={`panel-${activeTab}`}>
         {activeTab === "overview" && (
           <div className="space-y-3">
-            <h2 className="text-base sm:text-lg font-bold text-slate-800">
+            <h2 className="text-base sm:text-lg font-bold text-brand-header">
               Workspace Overview Panel
             </h2>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-brand-text">
               Active URL coordinate:{" "}
               <code className="bg-slate-100 px-2 py-0.5 rounded text-blue-600 font-mono">
                 ?tab=overview
@@ -193,11 +193,11 @@ export default function Dashboard() {
 
         {activeTab === "analytics" && (
           <div className="space-y-3">
-            <h2 className="text-base sm:text-lg font-bold text-slate-800">
+            <h2 className="text-base sm:text-lg font-bold text-brand-header">
               Real-time Telemetry Analytics
             </h2>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-brand-text">
               Active URL coordinate:{" "}
               <code className="bg-slate-100 px-2 py-0.5 rounded text-blue-600 font-mono">
                 ?tab=analytics
@@ -214,10 +214,10 @@ export default function Dashboard() {
         {activeTab === "activity" && (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <h2 className="text-base sm:text-lg font-bold text-slate-800">
+              <h2 className="text-base sm:text-lg font-bold text-brand-header">
                 System Logs & Operations Activity
               </h2>
-              <span className="text-xs font-bold text-slate-500">
+              <span className="text-xs font-bold text-brand-text">
                 {filteredLogs.length} logs found
               </span>
             </div>
@@ -259,11 +259,11 @@ export default function Dashboard() {
 
         {activeTab === "reports" && (
           <div className="space-y-3">
-            <h2 className="text-base sm:text-lg font-bold text-slate-800">
+            <h2 className="text-base sm:text-lg font-bold text-brand-header">
               Export & Audit Reports
             </h2>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-brand-text">
               Active URL coordinate:{" "}
               <code className="bg-slate-100 px-2 py-0.5 rounded text-blue-600 font-mono">
                 ?tab=reports

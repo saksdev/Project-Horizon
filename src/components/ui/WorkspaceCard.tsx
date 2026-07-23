@@ -24,7 +24,7 @@ export const WorkspaceCard = memo(function WorkspaceCard({
       <div>
         {(title || icon || headerAction) && (
           <div className="flex items-center justify-between mb-4 select-none">
-            <div className="flex items-center gap-2 text-slate-700 font-bold text-sm">
+            <div className="flex items-center gap-2 text-brand-header font-bold text-sm">
               {icon && <span className="shrink-0">{icon}</span>}
               {title && <span>{title}</span>}
             </div>
@@ -37,7 +37,7 @@ export const WorkspaceCard = memo(function WorkspaceCard({
 
       {(footer || description) && (
         <div className="flex flex-col gap-2">
-          {description && <p className="text-[10px] text-slate-400 leading-normal">{description}</p>}
+          {description && <p className="text-[10px] text-brand-text leading-normal">{description}</p>}
           {footer && <div className="pt-2 border-t border-slate-50">{footer}</div>}
         </div>
       )}
