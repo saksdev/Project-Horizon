@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   LayoutDashboard,
   BarChart3,
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { InputField } from "../components/ui/InputField";
 import { useWorkspace } from "../context/WorkspaceContext";
+import { useDebounce } from "../hooks/useDebounce";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -27,14 +28,37 @@ export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { records } = useWorkspace();
 
-  // Route Parameter Parsing (FE-08.1 & FE-08.3): Validates URL tab key against schema and primes deep-link views with safe fallback to "overview"
+  // Route Parameter Parsing (FE-08.1 & FE-08.3)
   const rawTab = searchParams.get("tab") || "";
   const activeTab = TABS.some((t) => t.id === rawTab) ? rawTab : "overview";
   const searchQuery = searchParams.get("query") || "";
 
+  // FE-14.1: Local input state and custom debouncer integration
+  const [inputValue, setInputValue] = useState(searchQuery);
+  const debouncedQuery = useDebounce(inputValue, 300);
+
+  // Sync local input box if URL search query changes elsewhere (e.g. navigation / reload)
+  useEffect(() => {
+    setInputValue(searchQuery);
+  }, [searchQuery]);
+
+  // Sync debounced search value to URL query parameters once typing stops
+  useEffect(() => {
+    // Only update searchParams if the value has actually changed to prevent render loops
+    const currentQuery = searchParams.get("query") || "";
+    const cleanDebounced = debouncedQuery.trim();
+
+    if (cleanDebounced !== currentQuery) {
+      const nextParams: { tab: string; query?: string } = { tab: activeTab };
+      if (cleanDebounced) {
+        nextParams.query = cleanDebounced;
+      }
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [debouncedQuery, activeTab, searchParams, setSearchParams]);
+
   /**
    * Handles tab switching by updating the URL search parameter.
-   * Records explicit history checkpoints to enable accurate browser Back/Forward navigation.
    */
   const handleTabChange = useCallback(
     (tabId: string) => {
@@ -48,20 +72,11 @@ export default function Dashboard() {
   );
 
   /**
-   * Handles real-time search query input mutations.
-   * Uses in-place history replacement ({ replace: true }) to prevent browser history stack pollution.
+   * Handles real-time search query input mutations (updates local state instantly).
    */
-  const handleQueryChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const val = e.target.value;
-      const nextParams: { tab: string; query?: string } = { tab: activeTab };
-      if (val.trim()) {
-        nextParams.query = val.trim();
-      }
-      setSearchParams(nextParams, { replace: true });
-    },
-    [activeTab, setSearchParams]
-  );
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+  }, []);
 
   /**
    * Memoized log filtering logic subscribing directly to central store records.logs (FE-10.1 & FE-10.3).
@@ -92,7 +107,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Tab Controls (Fluid Horizontal Scroll Bar on Mobile Viewports) */}
+        {/* Tab Controls */}
         <div className="w-full md:w-auto overflow-x-auto scrollbar-none" role="tablist">
           <div className="inline-flex min-w-max bg-slate-200/70 p-1 rounded-xl gap-1">
             {TABS.map((tab) => {
@@ -106,10 +121,11 @@ export default function Dashboard() {
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${isActive
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                    isActive
                       ? "bg-white text-blue-600 shadow-sm"
                       : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
-                    }`}
+                  }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   <span>{tab.label}</span>
@@ -126,8 +142,8 @@ export default function Dashboard() {
           <InputField
             id="logQuery"
             name="logQuery"
-            value={searchQuery}
-            onChange={handleQueryChange}
+            value={inputValue}
+            onChange={handleInputChange}
             placeholder="Search logs or filter parameters (e.g. auth, warn, system)..."
             leftIcon={<Search className="w-4 h-4" />}
           />
@@ -230,12 +246,13 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-2 font-mono text-xs text-slate-700 overflow-x-auto">
                       <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${log.level === "INFO"
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          log.level === "INFO"
                             ? "bg-blue-100 text-blue-700"
                             : log.level === "WARN"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-emerald-100 text-emerald-700"
-                          }`}
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}
                       >
                         {log.level}
                       </span>
