@@ -20,6 +20,7 @@ export default defineConfig({
           if (id.includes('node_modules/axios/') || id.includes('node_modules/msw/')) {
             return 'network';
           }
+          return undefined;
         },
       },
     },

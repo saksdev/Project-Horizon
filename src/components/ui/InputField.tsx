@@ -1,8 +1,8 @@
 import React, { memo } from "react";
 
 export interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
+  label?: string | undefined;
+  error?: string | undefined;
   leftIcon?: React.ReactNode;
 }
 
