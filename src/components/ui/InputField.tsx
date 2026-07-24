@@ -26,18 +26,16 @@ export const InputField = memo(
                 {leftIcon}
               </div>
             )}
-            
+
             <input
               ref={ref}
               id={id}
               type={type}
-              className={`w-full text-sm rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-800 font-medium ${
-                leftIcon ? "pl-10" : "px-3.5"
-              } py-2.5 ${
-                error
+              className={`w-full text-sm rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-800 font-medium ${leftIcon ? "pl-10" : "px-3.5"
+                } py-2.5 ${error
                   ? "border border-red-300 focus:ring-red-500/25 focus:border-red-500 bg-red-50/10"
                   : "border border-slate-200 focus:ring-blue-500/25 focus:border-blue-500 bg-white"
-              } ${className}`}
+                } ${className}`}
               {...props}
             />
           </div>
