@@ -31,8 +31,6 @@ export interface PermanentWorkspaceRecords {
 // Temporary UI state structure
 export interface TemporaryUISwitches {
   readonly isMobileDrawerOpen: boolean;
-  readonly activeTab: string;
-  readonly searchQuery: string;
 }
 
 // Permanent Records State & Mutators (Readonly Protected Data Tree)
@@ -46,11 +44,8 @@ export interface WorkspaceContextType {
   readonly toggleSystemLogs: () => Promise<any>;
   readonly restoreDefaults: () => Promise<any>;
 
-  // Temporary UI Switches State & Mutators (Readonly Protected Data Tree)
   readonly ui: Readonly<TemporaryUISwitches>;
   readonly toggleMobileDrawer: (open?: boolean) => void;
-  readonly setActiveTab: (tab: string) => void;
-  readonly setSearchQuery: (query: string) => void;
 
   // Toast System State & Mutators
   readonly toasts: ReadonlyArray<ToastMessage>;
@@ -78,8 +73,6 @@ const INITIAL_RECORDS: PermanentWorkspaceRecords = Object.freeze({
 
 const INITIAL_UI: TemporaryUISwitches = Object.freeze({
   isMobileDrawerOpen: false,
-  activeTab: "overview",
-  searchQuery: "",
 });
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
@@ -108,10 +101,12 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   }, []);
 
-  // Fetch initial configuration on mount
+  // Fetch initial configuration on mount (FE-14.4 Event Disposal via AbortController)
   useEffect(() => {
+    const controller = new AbortController();
     setIsLoading(true);
-    apiClient.get("/api/workspace")
+
+    apiClient.get("/api/workspace", { signal: controller.signal })
       .then((res) => {
         setRecords(Object.freeze({ ...INITIAL_RECORDS, ...res.data }));
         if (localStorage.getItem("login_success")) {
@@ -120,12 +115,21 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       })
       .catch((err) => {
+        if (err.name === "CanceledError" || err.code === "ERR_CANCELED") {
+          return;
+        }
         console.error("[WorkspaceStore DevTools]: Failed to load workspace configuration.", err);
         addToast("Failed to fetch initial workspace configurations from server.", "error");
       })
       .finally(() => {
-        setIsLoading(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
       });
+
+    return () => {
+      controller.abort();
+    };
   }, [addToast]);
 
   // Bind global Axios interceptor events to toast alerts
@@ -302,23 +306,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
   }, []);
 
-  const setActiveTab = useCallback((activeTab: string) => {
-    setUi((prev) =>
-      Object.freeze({
-        ...prev,
-        activeTab,
-      })
-    );
-  }, []);
-
-  const setSearchQuery = useCallback((searchQuery: string) => {
-    setUi((prev) =>
-      Object.freeze({
-        ...prev,
-        searchQuery,
-      })
-    );
-  }, []);
 
   const contextValue = useMemo<WorkspaceContextType>(
     () => ({
@@ -332,8 +319,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       restoreDefaults,
       ui,
       toggleMobileDrawer,
-      setActiveTab,
-      setSearchQuery,
       toasts,
       addToast,
       removeToast,
@@ -349,8 +334,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       restoreDefaults,
       ui,
       toggleMobileDrawer,
-      setActiveTab,
-      setSearchQuery,
       toasts,
       addToast,
       removeToast,

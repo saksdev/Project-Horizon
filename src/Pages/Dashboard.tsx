@@ -9,6 +9,7 @@ import {
   Filter,
 } from "lucide-react";
 import { InputField } from "../components/ui/InputField";
+import { WorkspaceCard } from "../components/ui/WorkspaceCard";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { useDebounce } from "../hooks/useDebounce";
 
@@ -159,32 +160,32 @@ export default function Dashboard() {
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 pt-2">
-              <div className="bg-blue-50/50 p-3.5 sm:p-4 rounded-xl border border-blue-100">
+              <WorkspaceCard className="bg-blue-50/50 !border-blue-100">
                 <span className="text-[10px] uppercase font-bold text-blue-600">
                   Total Requests
                 </span>
                 <p className="text-xl font-extrabold text-slate-800 mt-1">
                   1,248,900
                 </p>
-              </div>
+              </WorkspaceCard>
 
-              <div className="bg-emerald-50/50 p-3.5 sm:p-4 rounded-xl border border-emerald-100">
+              <WorkspaceCard className="bg-emerald-50/50 !border-emerald-100">
                 <span className="text-[10px] uppercase font-bold text-emerald-600">
                   System Health
                 </span>
                 <p className="text-xl font-extrabold text-slate-800 mt-1">
                   99.98%
                 </p>
-              </div>
+              </WorkspaceCard>
 
-              <div className="bg-purple-50/50 p-3.5 sm:p-4 rounded-xl border border-purple-100 sm:col-span-2 md:col-span-1">
+              <WorkspaceCard className="bg-purple-50/50 !border-purple-100 sm:col-span-2 md:col-span-1">
                 <span className="text-[10px] uppercase font-bold text-purple-600">
                   Active Sessions
                 </span>
                 <p className="text-xl font-extrabold text-slate-800 mt-1">
                   842
                 </p>
-              </div>
+              </WorkspaceCard>
             </div>
           </div>
         )}

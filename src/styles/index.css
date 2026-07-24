@@ -20,10 +20,13 @@
   --color-brand-text: #6b6375;
   --color-brand-header: #08060d;
   --color-brand-bg: #f1f4f7;
+
+  --breakpoint-xs: 320px;
 }
 
 body {
   font-family: var(--font-sans);
   margin: 0;
-  background-color: #ffffff; /* White background outside */
+  min-width: 320px;
+  background-color: #ffffff;
 }

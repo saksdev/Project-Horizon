@@ -8,13 +8,14 @@ import {
   Terminal,
   ShieldCheck,
   ShieldX,
-  Activity
+  Activity,
+  WifiOff
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { InputField } from "../components/ui/InputField";
 import { WorkspaceCard } from "../components/ui/WorkspaceCard";
 import { useWorkspace, type EnvironmentType } from "../context/WorkspaceContext";
-import apiClient from "../api/apiClient";
+import apiClient, { subscribeTrafficMetrics, getTrafficMetrics } from "../api/apiClient";
 
 interface ValidationErrors {
   displayName?: string;
@@ -44,6 +45,14 @@ export default function SettingsOptionsPanel() {
   const [latency, setLatency] = useState<number | null>(null);
   const [latencyStatus, setLatencyStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
   const [errorLog, setErrorLog] = useState<string>("");
+  const [trafficMetrics, setTrafficMetrics] = useState(getTrafficMetrics());
+
+  useEffect(() => {
+    const unsubscribe = subscribeTrafficMetrics(() => {
+      setTrafficMetrics(getTrafficMetrics());
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     setDisplayName(records.displayName);
@@ -53,12 +62,21 @@ export default function SettingsOptionsPanel() {
   }, [records.displayName, records.contactEmail, records.environmentMode, records.maxRateLimit]);
 
   /**
-   * Strips HTML tags and inline scripts from raw text inputs to prevent XSS attacks.
+   * Strips HTML tags, inline scripts, event handlers, and dangerous URI schemes
+   * from raw text inputs to prevent XSS attacks. (FE-04.4 hardened)
    */
   const sanitizeString = useCallback((val: string): string => {
     let clean = val.trim();
+    // Strip <script> blocks
     clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+    // Strip all remaining HTML tags
     clean = clean.replace(/<[^>]*>/g, "");
+    // Strip javascript: and data:text/html URI schemes
+    clean = clean.replace(/javascript\s*:/gi, "");
+    clean = clean.replace(/data\s*:\s*text\/html/gi, "");
+    // Strip inline event handler attributes (onerror, onmouseover, onclick, etc.)
+    clean = clean.replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, "");
+    clean = clean.replace(/\bon\w+\s*=\s*\S+/gi, "");
     return clean;
   }, []);
 
@@ -279,6 +297,15 @@ export default function SettingsOptionsPanel() {
     }
   }, []);
 
+  const triggerOffline = useCallback(async () => {
+    setErrorLog("");
+    try {
+      await apiClient.get("/api/trigger-offline");
+    } catch {
+      setErrorLog("[Offline Intercepted]: Network connection lost — fallback handler activated.");
+    }
+  }, []);
+
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -380,14 +407,12 @@ export default function SettingsOptionsPanel() {
                 type="button"
                 onClick={handleEmailToggle}
                 disabled={isLoading}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  records.emailAlertsEnabled ? "bg-indigo-600" : "bg-slate-200"
-                }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${records.emailAlertsEnabled ? "bg-indigo-600" : "bg-slate-200"
+                  }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    records.emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
-                  }`}
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${records.emailAlertsEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
                 />
               </button>
             </div>
@@ -402,14 +427,12 @@ export default function SettingsOptionsPanel() {
                 type="button"
                 onClick={handleLogsToggle}
                 disabled={isLoading}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  records.systemLogsEnabled ? "bg-indigo-600" : "bg-slate-200"
-                }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${records.systemLogsEnabled ? "bg-indigo-600" : "bg-slate-200"
+                  }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    records.systemLogsEnabled ? "translate-x-5" : "translate-x-0"
-                  }`}
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${records.systemLogsEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
                 />
               </button>
             </div>
@@ -484,7 +507,7 @@ export default function SettingsOptionsPanel() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <button
               type="button"
               onClick={testLatency}
@@ -500,7 +523,7 @@ export default function SettingsOptionsPanel() {
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 md:active:scale-95 transition-all duration-200 text-xs font-bold font-mono tracking-wide shadow-md shadow-amber-950/10 cursor-pointer"
             >
               <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-              <span>Trigger 401 Intercept</span>
+              <span>Trigger 401</span>
             </button>
             <button
               type="button"
@@ -508,16 +531,32 @@ export default function SettingsOptionsPanel() {
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 md:active:scale-95 transition-all duration-200 text-xs font-bold font-mono tracking-wide shadow-md shadow-rose-950/10 cursor-pointer"
             >
               <ShieldX className="w-3.5 h-3.5 text-rose-400" />
-              <span>Trigger 500 Intercept</span>
+              <span>Trigger 500</span>
+            </button>
+            <button
+              type="button"
+              onClick={triggerOffline}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-500/20 bg-slate-500/10 text-slate-300 hover:bg-slate-500/20 md:active:scale-95 transition-all duration-200 text-xs font-bold font-mono tracking-wide shadow-md shadow-slate-950/10 cursor-pointer"
+            >
+              <WifiOff className="w-3.5 h-3.5 text-slate-400" />
+              <span>Sim Offline</span>
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
             <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 font-mono text-xs space-y-1">
-              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payload Metrics</span>
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payload & Traffic Metrics</span>
               <div className="flex justify-between text-slate-350">
                 <span>Intercept Mode:</span>
                 <span className="text-emerald-400 font-bold">Service Worker</span>
+              </div>
+              <div className="flex justify-between text-slate-350">
+                <span>Active Connections:</span>
+                <span className="text-blue-400 font-bold">{trafficMetrics.activeConnections} (Max 1)</span>
+              </div>
+              <div className="flex justify-between text-slate-350">
+                <span>Total Requests:</span>
+                <span className="text-purple-400 font-bold">{trafficMetrics.totalRequests}</span>
               </div>
               <div className="flex justify-between text-slate-350">
                 <span>Latency Ping:</span>
@@ -552,7 +591,8 @@ export default function SettingsOptionsPanel() {
         <Button
           type="submit"
           disabled={isFormInvalid || isLoading}
-          leftIcon={!isLoading && <Save className="w-4.5 h-4.5" />}
+          isLoading={isLoading}
+          leftIcon={!isLoading ? <Save className="w-4.5 h-4.5" /> : undefined}
           className="px-6 py-2.5"
         >
           {isLoading ? "Saving..." : "Save Changes"}

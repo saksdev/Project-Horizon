@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { LogIn, Key, Mail } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { InputField } from "../components/ui/InputField";
 import { WorkspaceCard } from "../components/ui/WorkspaceCard";
@@ -11,6 +11,8 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/";
 
   const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -37,11 +39,11 @@ export default function Login() {
         setIsSubmitting(false);
         localStorage.setItem("mock_token", "mock_auth_token_horizon_2026");
         localStorage.setItem("login_success", "true");
-        navigate("/", { replace: true });
+        navigate(redirectPath, { replace: true });
         window.location.reload();
       }, 800);
     },
-    [email, password, navigate]
+    [email, password, navigate, redirectPath]
   );
 
   return (

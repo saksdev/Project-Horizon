@@ -1,5 +1,5 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useCallback } from "react";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useCallback, useEffect } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "./components/layout/Sidebar/Sidebar";
 import WorkspaceLayout from "./components/layout/Workspace/WorkspaceLayout";
@@ -10,10 +10,19 @@ import Settings from "./Pages/Settings";
 import Login from "./Pages/Login";
 import { ToastCard } from "./components/ui/Toast";
 import { useWorkspace } from "./context/WorkspaceContext";
+import { registerAuthExpiredListener } from "./api/apiClient";
 
 export default function App() {
   const { ui, toggleMobileDrawer, toasts, removeToast } = useWorkspace();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    registerAuthExpiredListener(() => {
+      navigate("/login", { replace: true });
+    });
+    return () => registerAuthExpiredListener(null);
+  }, [navigate]);
 
   const closeDrawer = useCallback(() => toggleMobileDrawer(false), [toggleMobileDrawer]);
   const openDrawer = useCallback(() => toggleMobileDrawer(true), [toggleMobileDrawer]);
@@ -24,7 +33,8 @@ export default function App() {
 
   // Unauthenticated fallback redirects
   if (!isAuthenticated && location.pathname !== "/login") {
-    return <Navigate to="/login" replace={true} />;
+    const redirectTarget = location.pathname + location.search;
+    return <Navigate to={`/login?redirect=${encodeURIComponent(redirectTarget)}`} replace={true} />;
   }
 
   // Prevent authenticated user from visiting login page
@@ -44,16 +54,16 @@ export default function App() {
 
         <main className="flex h-screen flex-1 flex-col overflow-hidden bg-brand-bg">
           {/* Mobile Header */}
-          <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm md:hidden">
+          <header className="flex items-center justify-between border-b border-slate-200 bg-white px-3 xs:px-4 py-3 shadow-sm md:hidden">
             <button onClick={openDrawer} className="p-2 hover:bg-slate-100 text-brand-header active:scale-95 rounded-lg transition-all" aria-label="Toggle Menu">
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-lg font-semibold text-brand-header">Horizon</h1>
+            <h1 className="text-base xs:text-lg font-semibold text-brand-header">Horizon</h1>
             <div className="w-8" />
           </header>
 
-          {/* Page Content */}
-          <section className="flex-1 overflow-y-auto p-3 sm:p-4">
+          {/* Page Content — FE-02.2: Fluid padding at 320px/768px thresholds */}
+          <section className="flex-1 overflow-y-auto p-2 xs:p-3 sm:p-4">
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/projects" element={<Projects />} />

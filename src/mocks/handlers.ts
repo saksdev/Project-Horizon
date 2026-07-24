@@ -66,4 +66,9 @@ export const handlers = [
     await delay(500);
     return new HttpResponse(null, { status: 500 });
   }),
+
+  http.get("/api/trigger-offline", async () => {
+    await delay(300);
+    return HttpResponse.error();
+  }),
 ];
