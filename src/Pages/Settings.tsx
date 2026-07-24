@@ -67,14 +67,10 @@ export default function SettingsOptionsPanel() {
    */
   const sanitizeString = useCallback((val: string): string => {
     let clean = val.trim();
-    // Strip <script> blocks
     clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
-    // Strip all remaining HTML tags
     clean = clean.replace(/<[^>]*>/g, "");
-    // Strip javascript: and data:text/html URI schemes
     clean = clean.replace(/javascript\s*:/gi, "");
     clean = clean.replace(/data\s*:\s*text\/html/gi, "");
-    // Strip inline event handler attributes (onerror, onmouseover, onclick, etc.)
     clean = clean.replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, "");
     clean = clean.replace(/\bon\w+\s*=\s*\S+/gi, "");
     return clean;
@@ -230,7 +226,7 @@ export default function SettingsOptionsPanel() {
     const safeName = sanitizeString(displayName);
     const safeEmail = sanitizeString(contactEmail);
 
-    setErrors({}); // Reset local errors before submit
+    setErrors({});
 
     const isProfileDirty = safeName !== records.displayName || safeEmail !== records.contactEmail;
     const isRateLimitDirty = maxRateLimit !== records.maxRateLimit;

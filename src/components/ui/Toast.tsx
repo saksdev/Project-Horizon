@@ -7,7 +7,6 @@ interface ToastCardProps {
   onDismiss: (id: string) => void;
 }
 
-/** A compact, self-dismissing toast notification card. */
 export const ToastCard = memo(function ToastCard({ toast, onDismiss }: ToastCardProps) {
   const { id, message, type } = toast;
 

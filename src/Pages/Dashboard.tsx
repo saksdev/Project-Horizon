@@ -29,7 +29,6 @@ export default function Dashboard() {
   const activeTab = TABS.some((t) => t.id === rawTab) ? rawTab : "overview";
   const searchQuery = searchParams.get("query") || "";
 
-  // Local state for search input and debouncer hook
   const [inputValue, setInputValue] = useState(searchQuery);
   const debouncedQuery = useDebounce(inputValue, 1000);
 

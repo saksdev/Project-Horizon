@@ -6,7 +6,6 @@ export type AuthExpiredListener = () => void;
 let errorListener: NetworkErrorListener | null = null;
 let authExpiredListener: AuthExpiredListener | null = null;
 
-// FE-14.4: Traffic Profiling & Metrics Tracking State
 let activeRequestCount = 0;
 let totalRequestCount = 0;
 let trafficMetricsListeners: Array<() => void> = [];

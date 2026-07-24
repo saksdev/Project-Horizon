@@ -27,22 +27,18 @@ export default function App() {
   const closeDrawer = useCallback(() => toggleMobileDrawer(false), [toggleMobileDrawer]);
   const openDrawer = useCallback(() => toggleMobileDrawer(true), [toggleMobileDrawer]);
 
-  // Auth Guard checking for active bearer credentials (FE-13.1)
   const token = localStorage.getItem("mock_token");
   const isAuthenticated = !!token;
 
-  // Unauthenticated fallback redirects
   if (!isAuthenticated && location.pathname !== "/login") {
     const redirectTarget = location.pathname + location.search;
     return <Navigate to={`/login?redirect=${encodeURIComponent(redirectTarget)}`} replace={true} />;
   }
 
-  // Prevent authenticated user from visiting login page
   if (isAuthenticated && location.pathname === "/login") {
     return <Navigate to="/" replace={true} />;
   }
 
-  // Render Login page standalone without sidebar layout frame
   if (location.pathname === "/login") {
     return <Login />;
   }
@@ -62,21 +58,18 @@ export default function App() {
             <div className="w-8" />
           </header>
 
-          {/* Page Content — FE-02.2: Fluid padding at 320px/768px thresholds */}
           <section className="flex-1 overflow-y-auto p-2 xs:p-3 sm:p-4">
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/users" element={<Users />} />
               <Route path="/settings" element={<Settings />} />
-              {/* Fallback wildcard to root */}
               <Route path="*" element={<Navigate to="/" replace={true} />} />
             </Routes>
           </section>
         </main>
       </WorkspaceLayout>
 
-      {/* Floating Toast Notification Container (FE-13.3) */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} onDismiss={removeToast} />
