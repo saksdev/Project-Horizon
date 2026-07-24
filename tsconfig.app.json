@@ -13,12 +13,11 @@
     ],
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
-  
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
+    "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
-
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -26,10 +25,10 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noImplicitReturns": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
