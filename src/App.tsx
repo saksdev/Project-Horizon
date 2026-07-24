@@ -1,16 +1,23 @@
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, lazy, Suspense } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "./components/layout/Sidebar/Sidebar";
 import WorkspaceLayout from "./components/layout/Workspace/WorkspaceLayout";
-import Dashboard from "./Pages/Dashboard";
-import Projects from "./Pages/Projects";
-import Users from "./Pages/Users";
-import Settings from "./Pages/Settings";
-import Login from "./Pages/Login";
 import { ToastCard } from "./components/ui/Toast";
 import { useWorkspace } from "./context/WorkspaceContext";
 import { registerAuthExpiredListener } from "./api/apiClient";
+
+const Dashboard = lazy(() => import("./Pages/Dashboard"));
+const Projects = lazy(() => import("./Pages/Projects"));
+const Users = lazy(() => import("./Pages/Users"));
+const Settings = lazy(() => import("./Pages/Settings"));
+const Login = lazy(() => import("./Pages/Login"));
+
+const PageLoader = () => (
+  <div className="flex h-full w-full items-center justify-center p-8">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
+  </div>
+);
 
 export default function App() {
   const { ui, toggleMobileDrawer, toasts, removeToast } = useWorkspace();
@@ -40,7 +47,11 @@ export default function App() {
   }
 
   if (location.pathname === "/login") {
-    return <Login />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Login />
+      </Suspense>
+    );
   }
 
   return (
@@ -59,13 +70,15 @@ export default function App() {
           </header>
 
           <section className="flex-1 overflow-y-auto p-2 xs:p-3 sm:p-4">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/users" element={<Users />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<Navigate to="/" replace={true} />} />
-            </Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/users" element={<Users />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<Navigate to="/" replace={true} />} />
+              </Routes>
+            </Suspense>
           </section>
         </main>
       </WorkspaceLayout>

@@ -7,13 +7,13 @@ import { WorkspaceProvider } from "./context/WorkspaceContext.tsx";
 
 
 async function startMocking() {
-  if (!import.meta.env.DEV) {
-    return;
+  if (import.meta.env.DEV) {
+    const { worker } = await import("./mocks/browser");
+    return worker.start({
+      onUnhandledRequest: "bypass",
+    });
   }
-  const { worker } = await import("./mocks/browser");
-  return worker.start({
-    onUnhandledRequest: "bypass",
-  });
+  return Promise.resolve();
 }
 
 startMocking().then(() => {
